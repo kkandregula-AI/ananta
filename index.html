@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0a0908" />
+<title>ANANTA · The Quadratic Wall & the Subquadratic Escape</title>
+<meta name="description" content="An interactive lab on why transformer attention doesn't scale, and the architectures that break the O(n²) wall." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0a0908; --bg-elev:#100d09; --panel:#16120c; --panel-2:#1c1710;
+    --line:#2a2318; --line-soft:#211b12;
+    --gold:#d4af6a; --gold-bright:#e6cd8d; --gold-dim:#8a7248; --gold-ghost:rgba(212,175,106,.10);
+    --ink:#ece5d6; --ink-mute:#9a917f; --ink-faint:#6b6353;
+    --real:#8fb27a; --sim:#d4af6a; --warn:#cf8a5e;
+    --curve-tf:#cf6a4a; --curve-lin:#7fb27a; --curve-log:#6a9fc4;
+    --radius:14px; --radius-sm:9px;
+    --maxw:1080px;
+    --shadow:0 24px 60px -30px rgba(0,0,0,.85);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"DM Sans",system-ui,sans-serif; font-weight:400;
+    line-height:1.6; -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  body::before{
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(900px 500px at 78% -8%, rgba(212,175,106,.08), transparent 60%),
+      radial-gradient(700px 500px at 5% 12%, rgba(120,90,50,.06), transparent 55%);
+  }
+  .wrap{position:relative; z-index:1; max-width:var(--maxw); margin:0 auto; padding:0 22px}
+  h1,h2,h3,.disp{font-family:"Cinzel",serif; font-weight:600; letter-spacing:.02em; line-height:1.15}
+  .mono{font-family:"DM Mono",ui-monospace,monospace}
+  a{color:var(--gold-bright); text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* ---------- top nav ---------- */
+  header.topbar{
+    position:sticky; top:0; z-index:40; backdrop-filter:blur(14px);
+    background:linear-gradient(180deg, rgba(10,9,8,.92), rgba(10,9,8,.72));
+    border-bottom:1px solid var(--line-soft);
+  }
+  .topbar .row{display:flex; align-items:center; gap:14px; height:60px; max-width:var(--maxw); margin:0 auto; padding:0 22px}
+  .brand{display:flex; align-items:center; gap:11px; font-family:"Cinzel"; font-weight:700; letter-spacing:.18em; font-size:15px; color:var(--gold-bright)}
+  .brand .mark{width:26px;height:26px;border-radius:7px;display:block;box-shadow:0 0 0 1px var(--line)}
+  .topbar nav{margin-left:auto; display:flex; gap:4px; align-items:center}
+  .navbtn{
+    font:inherit; font-size:12.5px; letter-spacing:.04em; color:var(--ink-mute);
+    background:transparent; border:0; padding:8px 11px; border-radius:8px; cursor:pointer;
+  }
+  .navbtn:hover{color:var(--ink); background:var(--gold-ghost)}
+  .navbtn.icon{padding:8px 10px; font-size:15px}
+  .prog-rail{height:2px; background:var(--line-soft); position:relative}
+  .prog-fill{height:100%; width:0%; background:linear-gradient(90deg,var(--gold-dim),var(--gold-bright)); transition:width .4s ease}
+
+  /* ---------- hero ---------- */
+  .hero{padding:64px 0 30px; position:relative}
+  .eyebrow{font-family:"DM Mono"; font-size:11.5px; letter-spacing:.32em; text-transform:uppercase; color:var(--gold-dim); margin:0 0 18px}
+  .hero h1{font-size:clamp(34px,6.4vw,62px); margin:0 0 10px; color:var(--ink)}
+  .hero h1 .em{color:var(--gold-bright); font-style:normal}
+  .hero .sub{font-size:clamp(16px,2.2vw,20px); color:var(--ink-mute); max-width:60ch; margin:0 0 30px}
+  .tagline{font-family:"DM Mono"; font-size:12px; color:var(--ink-faint); letter-spacing:.04em}
+
+  /* signature hero viz */
+  .signature{margin:26px 0 8px; border:1px solid var(--line); border-radius:var(--radius); background:linear-gradient(180deg,var(--panel),var(--bg-elev)); box-shadow:var(--shadow); overflow:hidden}
+  .sig-head{display:flex; flex-wrap:wrap; gap:12px; align-items:baseline; justify-content:space-between; padding:18px 20px 6px}
+  .sig-head h2{font-size:18px; margin:0; color:var(--ink)}
+  .sig-canvas-holder{padding:6px 8px 2px; position:relative}
+  canvas{display:block; width:100%; height:auto; touch-action:none}
+  .sig-controls{padding:6px 20px 20px}
+  .readout{display:flex; flex-wrap:wrap; gap:18px 30px; align-items:flex-end; margin:2px 0 16px}
+  .stat{display:flex; flex-direction:column; gap:2px}
+  .stat .k{font-family:"DM Mono"; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-faint)}
+  .stat .v{font-family:"Cinzel"; font-weight:600; font-size:clamp(22px,4vw,30px); color:var(--gold-bright); line-height:1}
+  .stat .v.small{font-size:19px; color:var(--ink)}
+  .stat .v.tf{color:var(--curve-tf)} .stat .v.lin{color:var(--curve-lin)}
+
+  input[type=range]{
+    -webkit-appearance:none; appearance:none; width:100%; height:4px; border-radius:3px;
+    background:linear-gradient(90deg,var(--gold-dim),var(--gold) var(--pct,50%),var(--line) var(--pct,50%)); outline:none; margin:8px 0;
+  }
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:20px;height:20px;border-radius:50%;background:var(--gold-bright);border:2px solid #1a1610;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+  input[type=range]::-moz-range-thumb{width:20px;height:20px;border:2px solid #1a1610;border-radius:50%;background:var(--gold-bright);cursor:pointer}
+  .range-labels{display:flex; justify-content:space-between; font-family:"DM Mono"; font-size:10.5px; color:var(--ink-faint); letter-spacing:.06em}
+  .ctx-line{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:2px}
+  .ctx-line .lab{font-family:"DM Mono"; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-faint)}
+  .ctx-line .val{font-family:"Cinzel"; font-weight:600; font-size:22px; color:var(--gold-bright)}
+
+  /* tags */
+  .tag{display:inline-flex; align-items:center; gap:6px; font-family:"DM Mono"; font-size:10px; letter-spacing:.12em; text-transform:uppercase; padding:3px 9px; border-radius:20px; border:1px solid transparent}
+  .tag.real{color:var(--real); border-color:rgba(143,178,122,.4); background:rgba(143,178,122,.08)}
+  .tag.sim{color:var(--sim); border-color:rgba(212,175,106,.35); background:rgba(212,175,106,.07)}
+  .tag .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+  /* ---------- section scaffold ---------- */
+  section.chapter{padding:52px 0; border-top:1px solid var(--line-soft)}
+  .ch-eyebrow{display:flex; align-items:center; gap:12px; margin:0 0 14px}
+  .ch-num{font-family:"DM Mono"; font-size:12px; color:var(--gold-dim); letter-spacing:.1em}
+  .ch-eyebrow .rule{height:1px; flex:1; background:linear-gradient(90deg,var(--line),transparent)}
+  section.chapter h2{font-size:clamp(24px,4vw,34px); margin:0 0 14px; color:var(--ink)}
+  section.chapter .lede{font-size:17px; color:var(--ink-mute); max-width:66ch; margin:0 0 26px}
+  p{margin:0 0 16px}
+  .prose{max-width:66ch}
+  .prose p{color:var(--ink-mute)}
+  .prose strong{color:var(--ink); font-weight:600}
+  .kbd{font-family:"DM Mono"; font-size:.9em; background:var(--panel-2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; color:var(--gold-bright)}
+
+  .card{background:linear-gradient(180deg,var(--panel),var(--bg-elev)); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow)}
+  .card-pad{padding:20px}
+  .lab{margin:22px 0}
+  .lab-head{display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; margin-bottom:6px}
+  .lab-head h3{font-size:15px; margin:0; color:var(--gold-bright); letter-spacing:.06em}
+  .lab-note{font-size:13px; color:var(--ink-faint); margin:10px 0 0; font-style:italic}
+
+  /* attention matrix */
+  .matrix-holder{display:flex; gap:18px; flex-wrap:wrap; align-items:center}
+  .matrix-holder .mx{flex:1; min-width:240px}
+  .matrix-holder .mx-side{flex:1; min-width:220px}
+  .seg{display:inline-flex; background:var(--panel-2); border:1px solid var(--line); border-radius:9px; padding:3px; gap:2px; flex-wrap:wrap}
+  .seg button{font:inherit; font-family:"DM Mono"; font-size:11.5px; letter-spacing:.04em; color:var(--ink-mute); background:transparent; border:0; padding:7px 12px; border-radius:6px; cursor:pointer}
+  .seg button.on{background:var(--gold-ghost); color:var(--gold-bright); box-shadow:inset 0 0 0 1px rgba(212,175,106,.3)}
+  .seg button:hover{color:var(--ink)}
+
+  /* family cards */
+  .families{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px; margin-top:8px}
+  .fam{border:1px solid var(--line); border-radius:var(--radius-sm); padding:16px; background:var(--panel); cursor:pointer; transition:border-color .2s, transform .2s}
+  .fam:hover{border-color:var(--gold-dim); transform:translateY(-2px)}
+  .fam.on{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold-ghost), var(--shadow)}
+  .fam h4{font-family:"Cinzel"; font-size:15px; margin:0 0 3px; color:var(--gold-bright)}
+  .fam .big-o{font-family:"DM Mono"; font-size:12px; color:var(--curve-lin); margin-bottom:8px}
+  .fam p{font-size:13px; color:var(--ink-mute); margin:0}
+  .fam-detail{margin-top:16px; border:1px solid var(--line); border-radius:var(--radius-sm); padding:18px; background:var(--bg-elev); min-height:120px}
+  .fam-detail h4{font-family:"Cinzel"; color:var(--gold-bright); margin:0 0 4px; font-size:17px}
+  .gl{display:flex; gap:20px; flex-wrap:wrap; margin-top:12px}
+  .gl div{flex:1; min-width:180px}
+  .gl .h{font-family:"DM Mono"; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; margin-bottom:5px}
+  .gl .gain .h{color:var(--real)} .gl .lose .h{color:var(--warn)}
+  .gl ul{margin:0; padding-left:18px; font-size:13.5px; color:var(--ink-mute)}
+  .gl li{margin-bottom:4px}
+
+  /* tradeoff picker */
+  .usecases{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px}
+  .chip{font:inherit; font-family:"DM Mono"; font-size:12px; letter-spacing:.03em; color:var(--ink-mute); background:var(--panel); border:1px solid var(--line); padding:8px 13px; border-radius:20px; cursor:pointer}
+  .chip:hover{color:var(--ink); border-color:var(--gold-dim)}
+  .chip.on{background:var(--gold-ghost); color:var(--gold-bright); border-color:var(--gold)}
+  .verdict{border-left:2px solid var(--gold); padding:4px 0 4px 16px}
+  .verdict .pick{font-family:"Cinzel"; font-size:18px; color:var(--gold-bright); margin-bottom:6px}
+  .verdict p{font-size:14.5px; color:var(--ink-mute); margin:0}
+
+  /* AI layer */
+  .ai-shell{border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; background:linear-gradient(180deg,var(--panel),var(--bg-elev))}
+  .ai-top{display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--line-soft)}
+  .ai-top h3{margin:0; font-size:15px; color:var(--gold-bright); letter-spacing:.06em}
+  .presets{display:flex; gap:8px; flex-wrap:wrap; padding:14px 18px 4px}
+  .preset{font:inherit; font-size:12.5px; text-align:left; color:var(--ink-mute); background:var(--panel-2); border:1px solid var(--line); border-radius:9px; padding:9px 12px; cursor:pointer; line-height:1.35}
+  .preset:hover{color:var(--ink); border-color:var(--gold-dim)}
+  .thread{padding:8px 18px; display:flex; flex-direction:column; gap:12px; max-height:420px; overflow-y:auto}
+  .msg{display:flex; gap:10px; align-items:flex-start}
+  .msg .av{width:26px;height:26px;border-radius:7px;flex:none;display:grid;place-items:center;font-family:"DM Mono";font-size:11px;font-weight:500}
+  .msg.user .av{background:var(--panel-2);border:1px solid var(--line);color:var(--ink-mute)}
+  .msg.ai .av{background:var(--gold-ghost);border:1px solid rgba(212,175,106,.35);color:var(--gold-bright)}
+  .bubble{font-size:14.5px; color:var(--ink); background:var(--panel-2); border:1px solid var(--line-soft); border-radius:10px; padding:11px 14px; max-width:100%}
+  .msg.user .bubble{background:transparent; color:var(--ink-mute)}
+  .bubble p{margin:0 0 8px} .bubble p:last-child{margin:0}
+  .bubble code{font-family:"DM Mono"; font-size:.9em; background:var(--bg); padding:1px 5px; border-radius:4px; color:var(--gold-bright)}
+  .composer{display:flex; gap:10px; padding:14px 18px; border-top:1px solid var(--line-soft); align-items:flex-end}
+  .composer textarea{flex:1; resize:none; font:inherit; font-size:14.5px; color:var(--ink); background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:11px 13px; min-height:44px; max-height:140px}
+  .composer textarea:focus{outline:none; border-color:var(--gold-dim)}
+  .btn{font:inherit; font-weight:500; letter-spacing:.02em; cursor:pointer; border-radius:10px; padding:11px 18px; border:1px solid var(--gold); background:var(--gold); color:#17120a; transition:filter .15s}
+  .btn:hover{filter:brightness(1.08)}
+  .btn:disabled{opacity:.5; cursor:not-allowed}
+  .btn.ghost{background:transparent; color:var(--gold-bright); border-color:var(--line)}
+  .btn.ghost:hover{border-color:var(--gold-dim)}
+  .typing{display:inline-flex; gap:4px; padding:4px 0}
+  .typing span{width:6px;height:6px;border-radius:50%;background:var(--gold-dim);animation:blink 1.2s infinite}
+  .typing span:nth-child(2){animation-delay:.2s} .typing span:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,60%,100%{opacity:.25}30%{opacity:1}}
+  @media (prefers-reduced-motion:reduce){ .typing span{animation:none} }
+  .needs-key{padding:20px 18px; font-size:14px; color:var(--ink-mute)}
+
+  /* modal / settings */
+  .modal-bg{position:fixed; inset:0; z-index:80; background:rgba(6,5,4,.72); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; padding:20px}
+  .modal-bg.on{display:flex}
+  .modal{width:100%; max-width:460px; background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden}
+  .modal-h{display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--line-soft)}
+  .modal-h h3{margin:0; font-size:16px; color:var(--gold-bright)}
+  .modal-b{padding:20px; display:flex; flex-direction:column; gap:16px}
+  .field label{display:block; font-family:"DM Mono"; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); margin-bottom:6px}
+  .field input,.field select{width:100%; font:inherit; font-size:14px; color:var(--ink); background:var(--panel-2); border:1px solid var(--line); border-radius:9px; padding:10px 12px}
+  .field input:focus,.field select:focus{outline:none; border-color:var(--gold-dim)}
+  .field .hint{font-size:12px; color:var(--ink-faint); margin-top:6px}
+  .model-chips{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px}
+  .model-chips button{font:inherit; font-family:"DM Mono"; font-size:11px; color:var(--ink-mute); background:var(--panel-2); border:1px solid var(--line); border-radius:7px; padding:6px 9px; cursor:pointer}
+  .model-chips button:hover{color:var(--ink); border-color:var(--gold-dim)}
+  .toggle-row{display:flex; align-items:center; justify-content:space-between; gap:12px}
+  .toggle-row .t-lab{font-size:14px; color:var(--ink)}
+  .switch{position:relative; width:44px; height:24px; flex:none}
+  .switch input{opacity:0; width:0; height:0}
+  .slider-sw{position:absolute; inset:0; background:var(--line); border-radius:20px; cursor:pointer; transition:background .2s}
+  .slider-sw::before{content:""; position:absolute; width:18px;height:18px; left:3px; top:3px; background:var(--ink-mute); border-radius:50%; transition:transform .2s, background .2s}
+  .switch input:checked + .slider-sw{background:var(--gold-dim)}
+  .switch input:checked + .slider-sw::before{transform:translateX(20px); background:var(--gold-bright)}
+
+  /* install banner */
+  .install{position:fixed; left:50%; transform:translateX(-50%); bottom:18px; z-index:60; display:none; align-items:center; gap:14px; background:var(--panel); border:1px solid var(--gold-dim); border-radius:12px; padding:12px 16px; box-shadow:var(--shadow); max-width:calc(100% - 32px)}
+  .install.on{display:flex}
+  .install span{font-size:13.5px; color:var(--ink)}
+
+  /* footer */
+  footer{border-top:1px solid var(--line-soft); padding:40px 0 60px; margin-top:20px}
+  .foot-grid{display:flex; flex-wrap:wrap; gap:24px; justify-content:space-between; align-items:flex-end}
+  .foot-brand{font-family:"Cinzel"; font-weight:700; letter-spacing:.2em; color:var(--gold-bright); font-size:15px}
+  .foot-note{font-family:"DM Mono"; font-size:11.5px; color:var(--ink-faint); line-height:1.7; max-width:52ch}
+  .foot-sig{font-family:"DM Mono"; font-size:11px; color:var(--gold-dim); letter-spacing:.04em}
+
+  .legend{display:flex; gap:16px; flex-wrap:wrap; font-family:"DM Mono"; font-size:11px; color:var(--ink-mute); margin-top:2px}
+  .legend i{display:inline-block; width:20px; height:2px; border-radius:2px; vertical-align:middle; margin-right:6px}
+
+  @media (max-width:640px){
+    .topbar nav .navbtn.wide{display:none}
+    .hero{padding:44px 0 20px}
+    .readout{gap:14px 22px}
+  }
+  .sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+  :focus-visible{outline:2px solid var(--gold); outline-offset:2px; border-radius:4px}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="row">
+    <div class="brand"><canvas class="mark" id="brandIcon" width="26" height="26" aria-hidden="true"></canvas> ANANTA</div>
+    <nav>
+      <button class="navbtn wide" data-goto="wall">The Wall</button>
+      <button class="navbtn wide" data-goto="curve">Cost Curve</button>
+      <button class="navbtn wide" data-goto="escapes">The Escapes</button>
+      <button class="navbtn wide" data-goto="ledger">Tradeoffs</button>
+      <button class="navbtn wide" data-goto="architect">Ask</button>
+      <button class="navbtn icon" id="openSettings" title="Settings" aria-label="Settings">⚙</button>
+    </nav>
+  </div>
+  <div class="prog-rail"><div class="prog-fill" id="progFill"></div></div>
+</header>
+
+<main>
+<div class="wrap">
+
+  <!-- HERO -->
+  <section class="hero" id="top">
+    <p class="eyebrow">The Subquadratic Series · Episode 01</p>
+    <h1>Attention doesn't scale.<br><span class="em">Here's what comes next.</span></h1>
+    <p class="sub">Every transformer compares every token with every other token. That's an <span class="mono">n²</span> wall — and in 2026 it's the wall the whole field is climbing over. Drag the context length below and watch it happen.</p>
+
+    <div class="signature">
+      <div class="sig-head">
+        <h2>The Quadratic Wall, live</h2>
+        <span class="tag sim"><span class="dot"></span>Simulated · illustrative scaling math</span>
+      </div>
+      <div class="sig-canvas-holder">
+        <canvas id="heroPlot" width="1000" height="420" role="img" aria-label="Compute cost versus context length for quadratic and subquadratic architectures"></canvas>
+      </div>
+      <div class="sig-controls">
+        <div class="ctx-line">
+          <span class="lab">Context length</span>
+          <span class="val mono" id="ctxVal">8,192</span>
+          <span class="lab" style="margin-left:auto">tokens</span>
+        </div>
+        <input type="range" id="ctxSlider" min="0" max="1000" value="360" aria-label="Context length" />
+        <div class="range-labels"><span>1K</span><span>64K</span><span>1M</span><span>12M</span></div>
+        <div class="readout">
+          <div class="stat"><span class="k">Full attention work</span><span class="v tf" id="tfCost">—</span></div>
+          <div class="stat"><span class="k">Subquadratic work</span><span class="v lin" id="linCost">—</span></div>
+          <div class="stat"><span class="k">The gap</span><span class="v" id="gapCost">—</span></div>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--curve-tf)"></i>Transformer · O(n²)</span>
+          <span><i style="background:var(--curve-log)"></i>Sparse · O(n·√n)</span>
+          <span><i style="background:var(--curve-lin)"></i>Linear / SSM · O(n)</span>
+        </div>
+      </div>
+    </div>
+    <p class="tagline">An interactive lab · shell runs offline · AI layer is bring-your-own-key</p>
+  </section>
+
+  <!-- CH1: THE WALL -->
+  <section class="chapter" id="wall" data-chapter>
+    <div class="ch-eyebrow"><span class="ch-num">01</span><span class="disp" style="font-size:12px;letter-spacing:.2em;color:var(--gold-dim)">THE PROBLEM</span><span class="rule"></span></div>
+    <h2>The Quadratic Wall</h2>
+    <p class="lede">Self-attention is the transformer's superpower and its ceiling. Every token looks at every other token — so doubling the context quadruples the work.</p>
+
+    <div class="prose">
+      <p>Inside one attention layer, each token produces a <strong>query</strong> and every token produces a <strong>key</strong>. To decide what to pay attention to, the model scores every query against every key. With <span class="kbd">n</span> tokens that's <span class="kbd">n × n</span> scores — an entire matrix that grows with the <em>square</em> of the sequence.</p>
+      <p>At 2,000 tokens that's 4 million comparisons. At 1 million tokens it's a trillion. This is why long context has historically been so expensive: the cost isn't in the model's size, it's in the <strong>shape of attention itself</strong>.</p>
+    </div>
+
+    <div class="lab card">
+      <div class="card-pad">
+        <div class="lab-head">
+          <h3>The attention matrix</h3>
+          <span class="tag sim"><span class="dot"></span>Simulated</span>
+        </div>
+        <div class="matrix-holder">
+          <div class="mx">
+            <canvas id="matrixCanvas" width="520" height="520" role="img" aria-label="Attention matrix pattern"></canvas>
+          </div>
+          <div class="mx-side">
+            <p style="font-size:13.5px;color:var(--ink-mute);margin-top:0">Every lit cell is one query–key comparison the model must compute and store. Change the pattern to see how the subquadratic families cut the matrix down.</p>
+            <div class="seg" role="tablist" aria-label="Attention pattern" style="margin:6px 0 16px">
+              <button data-pattern="full" class="on">Full</button>
+              <button data-pattern="local">Local window</button>
+              <button data-pattern="strided">Strided</button>
+              <button data-pattern="linear">Linear</button>
+            </div>
+            <div class="readout" style="margin:0">
+              <div class="stat"><span class="k">Tokens (n)</span><span class="v small mono" id="mxN">48</span></div>
+              <div class="stat"><span class="k">Cells computed</span><span class="v small mono" id="mxCells">2,304</span></div>
+              <div class="stat"><span class="k">vs full</span><span class="v small mono" id="mxPct">100%</span></div>
+            </div>
+            <label class="mono" style="font-size:11px;color:var(--ink-faint);letter-spacing:.08em;text-transform:uppercase">Sequence length</label>
+            <input type="range" id="mxSlider" min="8" max="96" value="48" aria-label="Number of tokens" />
+          </div>
+        </div>
+        <p class="lab-note" id="matrixNote">Full attention: every token attends to every other. The lit area — and the cost — is the whole square.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CH2: COST CURVE -->
+  <section class="chapter" id="curve" data-chapter>
+    <div class="ch-eyebrow"><span class="ch-num">02</span><span class="disp" style="font-size:12px;letter-spacing:.2em;color:var(--gold-dim)">THE STAKES</span><span class="rule"></span></div>
+    <h2>Reading the Cost Curve</h2>
+    <p class="lede">The same curves as the hero, but now yours to interrogate. On a log–log plot the wall is unmistakable: quadratic pulls away from linear, and never comes back.</p>
+    <div class="prose">
+      <p>In <strong>May 2026 the first commercial subquadratic model shipped with a 12-million-token context window</strong> — a length that would be economically absurd for full attention. The reason a jump like that becomes possible is entirely in the slope of these lines. Beyond a certain length, the architecture matters more than the parameter count.</p>
+    </div>
+    <div class="lab card">
+      <div class="card-pad">
+        <div class="lab-head">
+          <h3>Compute cost vs sequence length</h3>
+          <span class="tag sim"><span class="dot"></span>Simulated · relative to a 1K-token baseline</span>
+        </div>
+        <canvas id="curveCanvas" width="1000" height="440" role="img" aria-label="Log-log plot of cost versus sequence length"></canvas>
+        <div class="ctx-line" style="margin-top:14px">
+          <span class="lab">At sequence length</span>
+          <span class="val mono" id="curveCtxVal">8,192</span>
+          <span class="lab">tokens</span>
+        </div>
+        <input type="range" id="curveSlider" min="0" max="1000" value="360" aria-label="Sequence length" />
+        <div class="range-labels"><span>1K</span><span>64K</span><span>1M</span><span>12M</span></div>
+        <div class="verdict" id="curveVerdict" style="margin-top:16px">
+          <div class="pick" id="curveHeadline">—</div>
+          <p id="curveBody">—</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CH3: THE ESCAPES -->
+  <section class="chapter" id="escapes" data-chapter>
+    <div class="ch-eyebrow"><span class="ch-num">03</span><span class="disp" style="font-size:12px;letter-spacing:.2em;color:var(--gold-dim)">THE ANSWERS</span><span class="rule"></span></div>
+    <h2>The Four Escapes</h2>
+    <p class="lede">There is no single "subquadratic" method — there's a family of escapes, each trading a different slice of full attention for a gentler curve. Tap one to open it.</p>
+
+    <div class="families" id="famGrid">
+      <div class="fam on" data-fam="linear">
+        <h4>Linear Attention</h4>
+        <div class="big-o">O(n · d²)</div>
+        <p>Reorder the matmul so you never build the n×n matrix at all.</p>
+      </div>
+      <div class="fam" data-fam="ssm">
+        <h4>State Space Models</h4>
+        <div class="big-o">O(n) · scan</div>
+        <p>Replace attention with a recurrent state that streams through the sequence.</p>
+      </div>
+      <div class="fam" data-fam="sparse">
+        <h4>Sparse / Local</h4>
+        <div class="big-o">O(n · w)</div>
+        <p>Only attend to a window or a pattern, not the whole past.</p>
+      </div>
+      <div class="fam" data-fam="lowrank">
+        <h4>Low-Rank</h4>
+        <div class="big-o">O(n · k)</div>
+        <p>Project keys and values down to a small rank before attending.</p>
+      </div>
+    </div>
+
+    <div class="fam-detail card-pad" id="famDetail"></div>
+
+    <div class="lab card" style="margin-top:22px">
+      <div class="card-pad">
+        <div class="lab-head">
+          <h3 id="famVizTitle">The reordering trick</h3>
+          <span class="tag sim"><span class="dot"></span>Simulated</span>
+        </div>
+        <canvas id="famCanvas" width="1000" height="300" role="img" aria-label="Visualisation of the selected subquadratic family"></canvas>
+        <p class="lab-note" id="famVizNote">Full attention computes (Q·Kᵀ)·V — the Q·Kᵀ step alone is an n×n matrix. Linear attention computes Q·(Kᵀ·V) instead: the Kᵀ·V step is only d×d, and never grows with sequence length.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CH4: LEDGER -->
+  <section class="chapter" id="ledger" data-chapter>
+    <div class="ch-eyebrow"><span class="ch-num">04</span><span class="disp" style="font-size:12px;letter-spacing:.2em;color:var(--gold-dim)">THE JUDGEMENT</span><span class="rule"></span></div>
+    <h2>The Tradeoff Ledger</h2>
+    <p class="lede">Subquadratic isn't free — you give up exact, global, all-pairs attention. Whether that matters depends entirely on the job. Pick a workload.</p>
+
+    <div class="lab card">
+      <div class="card-pad">
+        <div class="usecases" id="useChips">
+          <button class="chip on" data-use="chat">Everyday chat</button>
+          <button class="chip" data-use="longdoc">Million-token document</button>
+          <button class="chip" data-use="code">Whole-repo coding</button>
+          <button class="chip" data-use="retrieval">Needle-in-haystack recall</button>
+          <button class="chip" data-use="genomics">Genomics / long signals</button>
+          <button class="chip" data-use="edge">On-device / edge</button>
+        </div>
+        <div class="verdict">
+          <div class="pick" id="useHeadline">—</div>
+          <p id="useBody">—</p>
+        </div>
+        <p class="lab-note">A pragmatic rule of 2026: most shipping systems are <em>hybrids</em> — a few full-attention layers for precise recall, stacked with many linear or SSM layers for cheap reach.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CH5: ARCHITECT -->
+  <section class="chapter" id="architect" data-chapter>
+    <div class="ch-eyebrow"><span class="ch-num">05</span><span class="disp" style="font-size:12px;letter-spacing:.2em;color:var(--gold-dim)">THE DIALOGUE</span><span class="rule"></span></div>
+    <h2>Ask the Architect</h2>
+    <p class="lede">Everything above is deterministic and runs offline. This part is live: it calls Claude with your own API key to answer whatever the labs left open.</p>
+
+    <div class="ai-shell">
+      <div class="ai-top">
+        <h3>Ask the Architect</h3>
+        <span class="tag real"><span class="dot"></span>Real · live Claude API</span>
+      </div>
+      <div id="aiBody">
+        <div class="presets" id="presets">
+          <button class="preset">Explain linear attention to me like I'm a product manager, not an ML researcher.</button>
+          <button class="preset">Why can't we just always use state space models and forget transformers?</button>
+          <button class="preset">What actually shipped in the 12M-context subquadratic model in 2026?</button>
+          <button class="preset">If I'm building a long-document RAG app, which architecture should I care about?</button>
+        </div>
+        <div class="thread" id="thread"></div>
+        <div class="composer">
+          <textarea id="aiInput" rows="1" placeholder="Ask about attention, SSMs, hybrids, tradeoffs…"></textarea>
+          <button class="btn" id="aiSend">Ask</button>
+        </div>
+      </div>
+    </div>
+    <p class="lab-note">Your key is stored only in this browser (localStorage) and sent directly to Anthropic — nothing routes through a server of mine. Set it under <span class="kbd">⚙</span>.</p>
+  </section>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <div class="foot-brand">ANANTA</div>
+        <p class="foot-note">The Subquadratic Series · Episode 01. Interactive scaling math is illustrative, not a running model — labelled <span style="color:var(--sim)">Simulated</span> throughout. The dialogue layer is a <span style="color:var(--real)">Real</span> call to the Claude API with your key.</p>
+      </div>
+      <div style="text-align:right">
+        <p class="foot-sig">Designed &amp; Architected by Krishnamurthy Kandregula · Made by Claude</p>
+      </div>
+    </div>
+  </div>
+</footer>
+</main>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-bg" id="settingsModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Settings">
+    <div class="modal-h"><h3>Settings</h3><button class="navbtn icon" id="closeSettings" aria-label="Close">✕</button></div>
+    <div class="modal-b">
+      <div class="field">
+        <label for="apiKey">Anthropic API key</label>
+        <input type="password" id="apiKey" placeholder="sk-ant-…" autocomplete="off" />
+        <div class="hint">Stored in this browser only. Get one at console.anthropic.com.</div>
+      </div>
+      <div class="field">
+        <label for="modelInput">Model</label>
+        <input type="text" id="modelInput" placeholder="claude-sonnet-5" />
+        <div class="model-chips" id="modelChips">
+          <button data-model="claude-opus-4-8">opus-4-8</button>
+          <button data-model="claude-sonnet-5">sonnet-5</button>
+          <button data-model="claude-haiku-4-5-20251001">haiku-4-5</button>
+        </div>
+      </div>
+      <div class="toggle-row">
+        <span class="t-lab">Reduce motion</span>
+        <label class="switch"><input type="checkbox" id="reduceMotion" /><span class="slider-sw"></span></label>
+      </div>
+      <div style="display:flex; gap:10px; justify-content:space-between; align-items:center">
+        <button class="btn ghost" id="resetProgress">Reset progress</button>
+        <button class="btn" id="saveSettings">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- INSTALL BANNER -->
+<div class="install" id="installBanner">
+  <span>Install ANANTA for offline study</span>
+  <button class="btn" id="installBtn" style="padding:8px 14px">Install</button>
+  <button class="navbtn icon" id="dismissInstall" aria-label="Dismiss">✕</button>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   ANANTA — Subquadratic architecture lab
+   Tranzit pattern: deterministic offline shell + BYOK AI layer
+   ============================================================ */
+
+/* ---------- persistence ---------- */
+const LS = {
+  key:  'ananta.apiKey',
+  model:'ananta.model',
+  rm:   'ananta.reduceMotion',
+  prog: 'ananta.progress'
+};
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v===null? d : v; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, v); }catch(e){} },
+  getJSON(k, d){ try{ const v = localStorage.getItem(k); return v? JSON.parse(v): d; }catch(e){ return d; } },
+  setJSON(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+let reduceMotion = store.get(LS.rm,'0') === '1'
+  || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+/* ---------- context-length mapping (slider 0..1000 -> tokens 1K..12M, log) ---------- */
+const MIN_TOK = 1000, MAX_TOK = 12000000;
+const logMin = Math.log10(MIN_TOK), logMax = Math.log10(MAX_TOK);
+function sliderToTokens(s){ const f = s/1000; return Math.round(Math.pow(10, logMin + f*(logMax-logMin))); }
+function tokensToSlider(t){ return Math.round((Math.log10(t)-logMin)/(logMax-logMin)*1000); }
+function fmtTokens(n){
+  if(n>=1000000) return (n/1000000).toFixed(n>=10000000?0:1).replace(/\.0$/,'')+'M';
+  if(n>=1000)    return (n/1000).toFixed(n>=100000?0:1).replace(/\.0$/,'')+'K';
+  return String(n);
+}
+function fmtCost(u){
+  if(u>=1e9)  return (u/1e9).toFixed(1).replace(/\.0$/,'')+'B×';
+  if(u>=1e6)  return (u/1e6).toFixed(1).replace(/\.0$/,'')+'M×';
+  if(u>=1e3)  return (u/1e3).toFixed(1).replace(/\.0$/,'')+'K×';
+  if(u>=10)   return Math.round(u)+'×';
+  return u.toFixed(1)+'×';
+}
+/* costs are relative to the 1K baseline (=1 unit) */
+function tfCostU(n){ const r = n/MIN_TOK; return r*r; }
+function linCostU(n){ return n/MIN_TOK; }
+function logCostU(n){ const r=n/MIN_TOK; return r*Math.sqrt(r); }
+
+/* ---------- device pixel ratio canvas helper ---------- */
+function fitCanvas(cv){
+  const dpr = Math.min(window.devicePixelRatio||1, 2);
+  const rect = cv.getBoundingClientRect();
+  const w = Math.max(rect.width, 200);
+  const ratio = cv.height / cv.width;      // keep aspect from attribute
+  const h = w * ratio;
+  cv.width = Math.round(w*dpr);
+  cv.height = Math.round(h*dpr);
+  cv.style.height = h+'px';
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return { ctx, w, h };
+}
+
+const C = {
+  bg:'#100d09', grid:'#241d13', gridSoft:'#1a150e',
+  tf:'#cf6a4a', lin:'#7fb27a', log:'#6a9fc4',
+  ink:'#ece5d6', mute:'#9a917f', faint:'#6b6353',
+  gold:'#d4af6a', goldB:'#e6cd8d'
+};
+
+/* ============================================================
+   HERO + CURVE plots (shared log-log renderer)
+   ============================================================ */
+function drawCostPlot(cv, currentTokens, opts){
+  opts = opts || {};
+  const { ctx, w, h } = fitCanvas(cv);
+  ctx.clearRect(0,0,w,h);
+  const padL=54, padR=16, padT=18, padB=34;
+  const plotW = w-padL-padR, plotH = h-padT-padB;
+
+  // axis domains (log)
+  const xMinL=logMin, xMaxL=logMax;
+  const yMin=1, yMaxU=tfCostU(MAX_TOK);         // biggest cost = tf at 12M
+  const yMinL=Math.log10(yMin), yMaxL=Math.log10(yMaxU);
+  const X = tk => padL + (Math.log10(tk)-xMinL)/(xMaxL-xMinL)*plotW;
+  const Y = u  => padT + (1-(Math.log10(Math.max(u,1))-yMinL)/(yMaxL-yMinL))*plotH;
+
+  // grid — vertical decades
+  ctx.lineWidth=1; ctx.font='10px "DM Mono", monospace'; ctx.textBaseline='top';
+  for(let e=3;e<=7;e++){
+    const tk=Math.pow(10,e), x=X(tk);
+    ctx.strokeStyle=C.gridSoft; ctx.beginPath(); ctx.moveTo(x,padT); ctx.lineTo(x,padT+plotH); ctx.stroke();
+    ctx.fillStyle=C.faint; ctx.textAlign='center';
+    ctx.fillText(fmtTokens(tk), x, padT+plotH+7);
+  }
+  // grid — horizontal decades
+  ctx.textAlign='right'; ctx.textBaseline='middle';
+  for(let e=0;e<=Math.ceil(yMaxL);e+=2){
+    const u=Math.pow(10,e), y=Y(u);
+    if(y<padT-2||y>padT+plotH+2) continue;
+    ctx.strokeStyle=C.gridSoft; ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+plotW,y); ctx.stroke();
+    ctx.fillStyle=C.faint; ctx.fillText(fmtCost(u), padL-8, y);
+  }
+  // axis frame
+  ctx.strokeStyle=C.grid; ctx.strokeRect(padL,padT,plotW,plotH);
+
+  // curve helper
+  function curve(fn,color,width){
+    ctx.strokeStyle=color; ctx.lineWidth=width; ctx.beginPath();
+    for(let i=0;i<=140;i++){
+      const tk=Math.pow(10, xMinL+(i/140)*(xMaxL-xMinL));
+      const x=X(tk), y=Y(fn(tk));
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+  curve(tfCostU, C.tf, 2.4);
+  curve(logCostU, C.log, 1.8);
+  curve(linCostU, C.lin, 2.4);
+
+  // current-length marker
+  const cx=X(currentTokens);
+  ctx.setLineDash([4,4]); ctx.strokeStyle='rgba(212,175,106,.5)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(cx,padT); ctx.lineTo(cx,padT+plotH); ctx.stroke(); ctx.setLineDash([]);
+  [[tfCostU,C.tf],[logCostU,C.log],[linCostU,C.lin]].forEach(([fn,col])=>{
+    const y=Y(fn(currentTokens));
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(cx,y,4.5,0,7); ctx.fill();
+    ctx.strokeStyle=C.bg; ctx.lineWidth=1.5; ctx.stroke();
+  });
+
+  // axis titles
+  ctx.fillStyle=C.faint; ctx.font='9px "DM Mono", monospace';
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+  ctx.save(); ctx.translate(13,padT+plotH/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('RELATIVE COMPUTE  (log)',0,0); ctx.restore();
+}
+
+/* hero controls */
+const ctxSlider=document.getElementById('ctxSlider');
+const heroPlot=document.getElementById('heroPlot');
+function renderHero(){
+  const tk=sliderToTokens(+ctxSlider.value);
+  ctxSlider.style.setProperty('--pct', (ctxSlider.value/10)+'%');
+  document.getElementById('ctxVal').textContent = tk.toLocaleString();
+  document.getElementById('tfCost').textContent  = fmtCost(tfCostU(tk));
+  document.getElementById('linCost').textContent = fmtCost(linCostU(tk));
+  const gap = tfCostU(tk)/linCostU(tk);
+  document.getElementById('gapCost').textContent = fmtCost(gap)+' worse';
+  drawCostPlot(heroPlot, tk);
+}
+ctxSlider.addEventListener('input', renderHero);
+
+/* curve chapter controls */
+const curveSlider=document.getElementById('curveSlider');
+const curveCanvas=document.getElementById('curveCanvas');
+function renderCurve(){
+  const tk=sliderToTokens(+curveSlider.value);
+  curveSlider.style.setProperty('--pct',(curveSlider.value/10)+'%');
+  document.getElementById('curveCtxVal').textContent=tk.toLocaleString();
+  drawCostPlot(curveCanvas, tk);
+  const gap=tfCostU(tk)/linCostU(tk);
+  let head, body;
+  if(tk<8000){
+    head='Below ~8K tokens, the wall barely bends.';
+    body='At short context the quadratic term is small, so full attention is cheap and its exact all-pairs recall is worth having. This is why classic transformers dominated the short-context era.';
+  } else if(tk<200000){
+    head='This is where the curves visibly split.';
+    body='Around tens of thousands of tokens the '+fmtCost(gap)+' gap starts to bite. Serving cost and latency climb fast — the region where sparse and hybrid designs first earned their place.';
+  } else if(tk<3000000){
+    head='Past a million tokens, architecture beats scale.';
+    body='Full attention now does roughly '+fmtCost(gap)+' the work of a linear model at the same length. No amount of extra GPUs makes an O(n²) curve behave — you have to change the shape of attention.';
+  } else {
+    head='At 12M tokens, full attention is off the table.';
+    body='This is the regime the 2026 subquadratic release targets. A '+fmtCost(gap)+' gap means the quadratic option isn\u2019t merely pricey, it\u2019s economically impossible — the whole point of going subquadratic.';
+  }
+  document.getElementById('curveHeadline').textContent=head;
+  document.getElementById('curveBody').textContent=body;
+}
+curveSlider.addEventListener('input', renderCurve);
+
+/* ============================================================
+   ATTENTION MATRIX
+   ============================================================ */
+const matrixCanvas=document.getElementById('matrixCanvas');
+const mxSlider=document.getElementById('mxSlider');
+let mxPattern='full';
+const patternNotes={
+  full:'Full attention: every token attends to every other. The lit area — and the cost — is the whole square, O(n²).',
+  local:'Local window: each token only sees a fixed band of neighbours. Cost becomes O(n·w) — linear in n for a fixed window w.',
+  strided:'Strided / dilated: attend to a local band plus every k-th token, so information still travels far without filling the square.',
+  linear:'Linear attention doesn\u2019t build this matrix at all — it\u2019s shown here as a thin summary because the n×n step is replaced by a fixed-size state. Cost is O(n).'
+};
+function cellLit(i,j,n){
+  switch(mxPattern){
+    case 'full':    return j<=i;                         // causal full
+    case 'local':{  const w=Math.max(2,Math.round(n*0.16)); return j<=i && i-j<w; }
+    case 'strided':{const w=Math.max(2,Math.round(n*0.10)); return j<=i && (i-j<w || j%Math.max(2,Math.round(n*0.14))===0); }
+    case 'linear':  return j<=i && (j<2 || i-j<1);       // token summary only
+  }
+  return false;
+}
+function renderMatrix(){
+  const n=+mxSlider.value;
+  const { ctx, w, h } = fitCanvas(matrixCanvas);
+  ctx.clearRect(0,0,w,h);
+  const pad=6, size=Math.min(w,h)-pad*2, cell=size/n, ox=(w-size)/2, oy=(h-size)/2;
+  let lit=0;
+  for(let i=0;i<n;i++){
+    for(let j=0;j<n;j++){
+      const on=cellLit(i,j,n);
+      if(j<=i){
+        ctx.fillStyle = on ? 'rgba(212,175,106,'+(0.28+0.5*(1-(i-j)/n)).toFixed(3)+')' : 'rgba(120,110,90,.05)';
+      } else {
+        ctx.fillStyle='rgba(80,72,58,.04)';
+      }
+      if(on) lit++;
+      ctx.fillRect(ox+j*cell+0.5, oy+i*cell+0.5, cell-1, cell-1);
+    }
+  }
+  // diagonal accent
+  ctx.strokeStyle='rgba(212,175,106,.22)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(ox+size,oy+size); ctx.stroke();
+
+  const full=n*(n+1)/2;
+  document.getElementById('mxN').textContent=n;
+  document.getElementById('mxCells').textContent=lit.toLocaleString();
+  document.getElementById('mxPct').textContent=Math.round(lit/full*100)+'%';
+  document.getElementById('matrixNote').textContent=patternNotes[mxPattern];
+}
+mxSlider.addEventListener('input', renderMatrix);
+document.querySelectorAll('.seg [data-pattern]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.seg [data-pattern]').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); mxPattern=b.dataset.pattern; renderMatrix();
+  });
+});
+
+/* ============================================================
+   FAMILIES (chapter 3)
+   ============================================================ */
+const famData={
+  linear:{
+    title:'Linear Attention',
+    body:'The insight is pure algebra. Full attention computes (Q·Kᵀ)·V, and the Q·Kᵀ step builds an n×n matrix. But matrix multiplication is associative — you can instead compute Q·(Kᵀ·V). Now Kᵀ·V is a small d×d matrix that never grows with sequence length, so the whole layer scales linearly. The catch: it only works if you drop the softmax (or approximate it with a kernel), which softens the sharp, selective focus softmax gives you.',
+    gain:['Linear time and memory in sequence length','Can run as a fast recurrence at inference','No n×n matrix ever materialised'],
+    lose:['Approximates softmax — less razor-sharp focus','Weaker at exact single-token recall','Kernel choice matters a lot'],
+    vizTitle:'The reordering trick',
+    vizNote:'Full attention builds the red n×n matrix first. Linear attention multiplies Kᵀ·V first — the green d×d block — so nothing ever scales with n.'
+  },
+  ssm:{
+    title:'State Space Models',
+    body:'SSMs (the Mamba family) throw out attention entirely. Instead they carry a fixed-size hidden state that gets updated token by token, like a very sophisticated RNN — but formulated so it can be computed with a parallel scan during training. At inference it runs as a true recurrence: constant memory per step, no growing KV cache. Selective SSMs add input-dependent gates so the state can choose what to remember, which is what closed much of the old RNN quality gap.',
+    gain:['O(n) training via parallel scan','Constant memory per step at inference','No KV cache to blow up on long context'],
+    lose:['Fixed state is an information bottleneck','Historically weaker at precise copy/recall','Younger toolchain than attention'],
+    vizTitle:'The recurrent scan',
+    vizNote:'Tokens stream left to right through one fixed-size state. Nothing accumulates into an n×n structure — memory per step stays flat no matter how long the sequence.'
+  },
+  sparse:{
+    title:'Sparse / Local Attention',
+    body:'Keep softmax attention, but don\u2019t attend to everything. Local windows let each token see only nearby neighbours; strided or dilated patterns add occasional long-range links so information can still travel across the sequence. Because each token attends to a fixed number of others, cost grows linearly. It\u2019s the most conservative escape — you keep real attention, you just ration it.',
+    gain:['Keeps genuine softmax attention','Predictable, linear cost with window w','Easy to bolt onto existing transformers'],
+    lose:['Can miss long-range links off the pattern','Pattern design is a manual knob','Global recall needs extra routing'],
+    vizTitle:'The attention band',
+    vizNote:'Only a band around the diagonal is computed. Widen the window and you buy more reach at proportional cost — but never the full square.'
+  },
+  lowrank:{
+    title:'Low-Rank Projection',
+    body:'The attention matrix is often approximately low-rank — it doesn\u2019t really need all n dimensions of information. Methods like Linformer project the keys and values down to a small fixed rank k before attention, turning the n×n interaction into n×k. Performer goes further, approximating the softmax kernel with random features. You trade a controlled amount of expressiveness for a curve that scales linearly in n.',
+    gain:['Linear in n for fixed rank k','Drop-in for standard attention','Tunable accuracy/cost dial via k'],
+    lose:['Low-rank assumption can break','Fixed projection may lose fine detail','Extra approximation error to manage'],
+    vizTitle:'The projection',
+    vizNote:'Keys and values (n rows) are squeezed through a fixed rank-k bottleneck before attention, so the interaction is n×k instead of n×n.'
+  }
+};
+let curFam='linear';
+function renderFamDetail(){
+  const d=famData[curFam];
+  document.getElementById('famDetail').innerHTML =
+    '<h4>'+d.title+'</h4>'+
+    '<p style="font-size:14px;color:var(--ink-mute);margin:0">'+d.body+'</p>'+
+    '<div class="gl"><div class="gain"><div class="h">What you gain</div><ul>'+
+    d.gain.map(x=>'<li>'+x+'</li>').join('')+'</ul></div>'+
+    '<div class="lose"><div class="h">What you give up</div><ul>'+
+    d.lose.map(x=>'<li>'+x+'</li>').join('')+'</ul></div></div>';
+  document.getElementById('famVizTitle').textContent=d.vizTitle;
+  document.getElementById('famVizNote').textContent=d.vizNote;
+  renderFamViz();
+}
+document.querySelectorAll('#famGrid .fam').forEach(f=>{
+  f.addEventListener('click',()=>{
+    document.querySelectorAll('#famGrid .fam').forEach(x=>x.classList.remove('on'));
+    f.classList.add('on'); curFam=f.dataset.fam; renderFamDetail();
+  });
+});
+
+/* family visualisations */
+const famCanvas=document.getElementById('famCanvas');
+function renderFamViz(){
+  const { ctx, w, h } = fitCanvas(famCanvas);
+  ctx.clearRect(0,0,w,h);
+  ctx.font='11px "DM Mono", monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  const midY=h/2;
+  function block(x,y,bw,bh,color,label,sub){
+    ctx.strokeStyle=color; ctx.lineWidth=1.5;
+    ctx.globalAlpha=0.12; ctx.fillStyle=color; ctx.fillRect(x,y,bw,bh); ctx.globalAlpha=1;
+    ctx.strokeRect(x,y,bw,bh);
+    ctx.fillStyle=color; ctx.fillText(label, x+bw/2, y+bh/2-6);
+    if(sub){ ctx.fillStyle=C.faint; ctx.font='9px "DM Mono"'; ctx.fillText(sub, x+bw/2, y+bh/2+9); ctx.font='11px "DM Mono"'; }
+  }
+  if(curFam==='linear'){
+    // left: (Q Kt) V  with big n x n ; right: Q (Kt V) with small d x d
+    ctx.fillStyle=C.mute; ctx.fillText('Full:  (Q·Kᵀ)·V', w*0.25, 22);
+    block(w*0.10, midY-70, 90, 90, C.tf, 'Q·Kᵀ', 'n × n');
+    block(w*0.10+104, midY-40, 46, 60, C.mute, '·V', '');
+    ctx.fillStyle=C.tf; ctx.fillText('grows with n²', w*0.25, h-18);
+
+    ctx.strokeStyle=C.grid; ctx.beginPath(); ctx.moveTo(w*0.5,20); ctx.lineTo(w*0.5,h-20); ctx.stroke();
+
+    ctx.fillStyle=C.mute; ctx.fillText('Linear:  Q·(Kᵀ·V)', w*0.75, 22);
+    block(w*0.66, midY-26, 46, 60, C.mute, 'Q', '');
+    block(w*0.66+58, midY-26, 52, 52, C.lin, 'Kᵀ·V', 'd × d');
+    ctx.fillStyle=C.lin; ctx.fillText('fixed size — never grows', w*0.75, h-18);
+  } else if(curFam==='ssm'){
+    // token stream through one state
+    const n=9, gap=(w-80)/n, y=midY;
+    for(let i=0;i<n;i++){
+      const x=40+gap*i;
+      ctx.fillStyle=C.faint; ctx.fillRect(x-9,y+34,18,18);
+      ctx.fillStyle=C.mute; ctx.font='9px "DM Mono"'; ctx.fillText('t'+(i+1),x,y+43); ctx.font='11px "DM Mono"';
+      // arrow up to state
+      ctx.strokeStyle=C.grid; ctx.beginPath(); ctx.moveTo(x,y+32); ctx.lineTo(x,y+14); ctx.stroke();
+      if(i<n-1){ ctx.strokeStyle='rgba(127,178,122,.6)'; ctx.beginPath(); ctx.moveTo(x+9,y); ctx.lineTo(x+gap-9,y); ctx.stroke(); }
+    }
+    // the single state box spanning
+    ctx.globalAlpha=0.10; ctx.fillStyle=C.lin; ctx.fillRect(28,y-18,w-56,32); ctx.globalAlpha=1;
+    ctx.strokeStyle=C.lin; ctx.lineWidth=1.5; ctx.strokeRect(28,y-18,w-56,32);
+    ctx.fillStyle=C.lin; ctx.fillText('one fixed-size state · updated per token · O(n)', w/2, y+2);
+  } else if(curFam==='sparse'){
+    // band matrix
+    const n=22, pad=20, size=Math.min(w,h)-pad*2, cell=size/n, ox=(w-size)/2, oy=(h-size)/2, wdw=4;
+    for(let i=0;i<n;i++)for(let j=0;j<=i;j++){
+      const on = i-j<wdw;
+      ctx.fillStyle = on?'rgba(212,175,106,.6)':'rgba(120,110,90,.06)';
+      ctx.fillRect(ox+j*cell+0.5, oy+i*cell+0.5, cell-1, cell-1);
+    }
+    ctx.strokeStyle=C.lin; ctx.textAlign='left';
+    ctx.fillStyle=C.lin; ctx.fillText('only a band of width w is computed → O(n·w)', ox, oy+size+14); ctx.textAlign='center';
+  } else if(curFam==='lowrank'){
+    block(w*0.14, midY-60, 40, 120, C.mute, 'K,V', 'n rows');
+    // arrow
+    ctx.strokeStyle=C.gold; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(w*0.14+52,midY); ctx.lineTo(w*0.40,midY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(w*0.40,midY); ctx.lineTo(w*0.40-7,midY-5); ctx.lineTo(w*0.40-7,midY+5); ctx.closePath(); ctx.fillStyle=C.gold; ctx.fill();
+    ctx.fillStyle=C.faint; ctx.fillText('project ↓ to rank k', w*0.27, midY-70);
+    block(w*0.42, midY-26, 40, 52, C.lin, 'k', 'k rows');
+    ctx.strokeStyle=C.gold; ctx.beginPath(); ctx.moveTo(w*0.42+52,midY); ctx.lineTo(w*0.66,midY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(w*0.66,midY); ctx.lineTo(w*0.66-7,midY-5); ctx.lineTo(w*0.66-7,midY+5); ctx.closePath(); ctx.fillStyle=C.gold; ctx.fill();
+    block(w*0.68, midY-40, 70, 80, C.lin, 'attend', 'n × k');
+    ctx.fillStyle=C.lin; ctx.fillText('n × k  instead of  n × n', w/2, h-16);
+  }
+}
+
+/* ============================================================
+   TRADEOFF LEDGER (chapter 4)
+   ============================================================ */
+const useData={
+  chat:{h:'Full attention still wins — and it\u2019s cheap here.',b:'Typical chats are short. The quadratic term is tiny, so you get exact all-pairs recall at almost no cost. Subquadratic buys you little until context grows.'},
+  longdoc:{h:'Linear or SSM, in a hybrid.',b:'At a million-plus tokens the quadratic curve is economically impossible. You want a mostly-linear or SSM backbone for reach, with a few full-attention layers to keep precise recall alive.'},
+  code:{h:'Hybrid — reach plus exact lookup.',b:'Whole-repo context is long, but coding needs precise symbol recall (find this exact definition). Pure linear can blur that, so pair a cheap long-range backbone with full-attention layers for pinpoint retrieval.'},
+  retrieval:{h:'Keep full attention where it counts.',b:'Needle-in-a-haystack recall is exactly what softmax attention is best at and what many linear approximations are worst at. If exact retrieval is the whole job, don\u2019t give away sharp attention — or isolate it to dedicated layers.'},
+  genomics:{h:'SSMs shine here.',b:'DNA and long sensor signals are enormously long with meaningful local and periodic structure — the setting where state space models have posted some of their clearest wins over transformers.'},
+  edge:{h:'SSM or linear — memory is the constraint.',b:'On-device, the killer isn\u2019t FLOPs so much as the growing KV cache. A recurrent SSM keeps constant memory per step, which is often what makes long context feasible on small hardware at all.'}
+};
+document.querySelectorAll('#useChips .chip').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('#useChips .chip').forEach(x=>x.classList.remove('on'));
+    c.classList.add('on'); const d=useData[c.dataset.use];
+    document.getElementById('useHeadline').textContent=d.h;
+    document.getElementById('useBody').textContent=d.b;
+  });
+});
+
+/* ============================================================
+   AI LAYER — BYOK Claude (Tranzit AI half)
+   ============================================================ */
+const SYSTEM_PROMPT =
+'You are "The Architect" inside ANANTA, an interactive lab about subquadratic transformer architectures. '+
+'Your domain: why self-attention is O(n^2), and the families that break it — linear attention (kernel/associativity trick), '+
+'state space models (Mamba-style selective SSMs, parallel scan, recurrent inference), sparse/local/strided attention, '+
+'low-rank methods (Linformer, Performer), and modern hybrids that stack a few full-attention layers with many subquadratic ones. '+
+'You know the 2026 landscape: the first commercial subquadratic LLM with a ~12M-token context window, and the shift toward efficiency- '+
+'and hardware-aware architectures. Explain with intuition first, then precision. Use short paragraphs. Prefer concrete analogies and the '+
+'gain/give-up framing. When you are unsure or a detail is fast-moving, say so plainly rather than inventing specifics. Keep answers tight '+
+'(a few short paragraphs). You may use simple inline `code` for terms like O(n^2) or Q(K^T V). Never claim to run or benchmark a model here.';
+
+const thread=document.getElementById('thread');
+let convo=[]; // {role, content}
+let aiBusy=false;
+
+function esc(s){ return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function mdMini(s){
+  let t=esc(s);
+  t=t.replace(/`([^`]+)`/g,'<code>$1</code>');
+  t=t.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+  return t.split(/\n{2,}/).map(p=>'<p>'+p.replace(/\n/g,'<br>')+'</p>').join('');
+}
+function addMsg(role, html){
+  const el=document.createElement('div');
+  el.className='msg '+(role==='user'?'user':'ai');
+  el.innerHTML='<div class="av">'+(role==='user'?'You':'A')+'</div><div class="bubble">'+html+'</div>';
+  thread.appendChild(el); thread.scrollTop=thread.scrollHeight;
+  return el;
+}
+function keyPresent(){ return !!store.get(LS.key,'').trim(); }
+
+function renderAIGate(){
+  const presets=document.getElementById('presets');
+  const composer=document.querySelector('.composer');
+  if(keyPresent()){
+    presets.style.display='flex'; composer.style.display='flex';
+    const g=document.getElementById('aiGate'); if(g) g.remove();
+  } else {
+    presets.style.display='none'; composer.style.display='none';
+    if(!document.getElementById('aiGate')){
+      const g=document.createElement('div');
+      g.className='needs-key'; g.id='aiGate';
+      g.innerHTML='Add your Anthropic API key under <span class="kbd">⚙ Settings</span> to talk to the Architect. Everything else in ANANTA already works offline.';
+      document.getElementById('aiBody').prepend(g);
+    }
+  }
+}
+
+async function askArchitect(text){
+  if(aiBusy || !text.trim()) return;
+  if(!keyPresent()){ openSettings(); return; }
+  aiBusy=true; document.getElementById('aiSend').disabled=true;
+  addMsg('user', mdMini(text));
+  convo.push({role:'user', content:text});
+  const typingEl=addMsg('ai','<div class="typing"><span></span><span></span><span></span></div>');
+
+  const model=(store.get(LS.model,'')||'claude-sonnet-5').trim();
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'content-type':'application/json',
+        'x-api-key':store.get(LS.key,'').trim(),
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model, max_tokens:900, system:SYSTEM_PROMPT, messages:convo
+      })
+    });
+    if(!res.ok){
+      let detail=''; try{ const j=await res.json(); detail=(j.error&&j.error.message)||''; }catch(e){}
+      let msg;
+      if(res.status===401) msg='That key was rejected (401). Check it under ⚙ Settings.';
+      else if(res.status===404) msg='Model "'+model+'" wasn\u2019t found for this key (404). Try another under ⚙ Settings.';
+      else if(res.status===429) msg='Rate limited (429). Give it a moment and try again.';
+      else msg='Request failed ('+res.status+'). '+detail;
+      typingEl.querySelector('.bubble').innerHTML=mdMini(msg);
+      convo.pop();
+    } else {
+      const data=await res.json();
+      const out=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim()
+        || '(No text came back.)';
+      typingEl.querySelector('.bubble').innerHTML=mdMini(out);
+      convo.push({role:'assistant', content:out});
+    }
+  }catch(err){
+    typingEl.querySelector('.bubble').innerHTML=mdMini('Couldn\u2019t reach the API. If you\u2019re offline, the labs above still work — the dialogue needs a connection. ('+(err&&err.message||'network error')+')');
+    convo.pop();
+  }finally{
+    aiBusy=false; document.getElementById('aiSend').disabled=false;
+    thread.scrollTop=thread.scrollHeight;
+  }
+}
+const aiInput=document.getElementById('aiInput');
+document.getElementById('aiSend').addEventListener('click',()=>{ const v=aiInput.value; aiInput.value=''; aiInput.style.height='auto'; askArchitect(v); });
+aiInput.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); const v=aiInput.value; aiInput.value=''; aiInput.style.height='auto'; askArchitect(v); }});
+aiInput.addEventListener('input',()=>{ aiInput.style.height='auto'; aiInput.style.height=Math.min(aiInput.scrollHeight,140)+'px'; });
+document.querySelectorAll('#presets .preset').forEach(p=>{
+  p.addEventListener('click',()=>askArchitect(p.textContent.trim()));
+});
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+const modal=document.getElementById('settingsModal');
+function openSettings(){
+  document.getElementById('apiKey').value=store.get(LS.key,'');
+  document.getElementById('modelInput').value=store.get(LS.model,'claude-sonnet-5');
+  document.getElementById('reduceMotion').checked = store.get(LS.rm,'0')==='1';
+  modal.classList.add('on');
+}
+function closeSettings(){ modal.classList.remove('on'); }
+document.getElementById('openSettings').addEventListener('click',openSettings);
+document.getElementById('closeSettings').addEventListener('click',closeSettings);
+modal.addEventListener('click',e=>{ if(e.target===modal) closeSettings(); });
+document.querySelectorAll('#modelChips button').forEach(b=>{
+  b.addEventListener('click',()=>{ document.getElementById('modelInput').value=b.dataset.model; });
+});
+document.getElementById('saveSettings').addEventListener('click',()=>{
+  store.set(LS.key, document.getElementById('apiKey').value.trim());
+  store.set(LS.model, document.getElementById('modelInput').value.trim()||'claude-sonnet-5');
+  const rm=document.getElementById('reduceMotion').checked;
+  store.set(LS.rm, rm?'1':'0'); reduceMotion=rm;
+  renderAIGate(); closeSettings();
+});
+document.getElementById('resetProgress').addEventListener('click',()=>{
+  store.setJSON(LS.prog, {}); updateProgress(); 
+  document.getElementById('resetProgress').textContent='Reset ✓';
+  setTimeout(()=>{document.getElementById('resetProgress').textContent='Reset progress';},1200);
+});
+
+/* ============================================================
+   NAV + PROGRESS
+   ============================================================ */
+document.querySelectorAll('[data-goto]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const el=document.getElementById(b.dataset.goto);
+    if(el) el.scrollIntoView({behavior:reduceMotion?'auto':'smooth', block:'start'});
+  });
+});
+document.querySelector('.brand').addEventListener('click',()=>document.getElementById('top').scrollIntoView({behavior:reduceMotion?'auto':'smooth'}));
+
+const chapters=[...document.querySelectorAll('[data-chapter]')];
+function updateProgress(){
+  const seen=store.getJSON(LS.prog,{});
+  const pct=Math.round(Object.keys(seen).length / chapters.length * 100);
+  document.getElementById('progFill').style.width=pct+'%';
+}
+const seenObs=new IntersectionObserver((entries)=>{
+  entries.forEach(en=>{
+    if(en.isIntersecting){
+      const seen=store.getJSON(LS.prog,{});
+      if(!seen[en.target.id]){ seen[en.target.id]=1; store.setJSON(LS.prog,seen); updateProgress(); }
+    }
+  });
+},{threshold:0.4});
+chapters.forEach(c=>seenObs.observe(c));
+
+/* ============================================================
+   BRAND ICON (canvas-generated) + PWA
+   ============================================================ */
+function drawIcon(cv, S){
+  const ctx=cv.getContext('2d'); ctx.clearRect(0,0,S,S);
+  ctx.fillStyle='#0a0908'; ctx.fillRect(0,0,S,S);
+  // quadratic wall vs flat line motif
+  ctx.strokeStyle='#cf6a4a'; ctx.lineWidth=Math.max(1,S*0.06); ctx.beginPath();
+  ctx.moveTo(S*0.16,S*0.82);
+  for(let i=0;i<=20;i++){ const t=i/20; ctx.lineTo(S*(0.16+0.68*t), S*(0.82-0.66*t*t)); }
+  ctx.stroke();
+  ctx.strokeStyle='#d4af6a'; ctx.beginPath();
+  ctx.moveTo(S*0.16,S*0.72); ctx.lineTo(S*0.84,S*0.5); ctx.stroke();
+  ctx.fillStyle='#e6cd8d'; ctx.beginPath(); ctx.arc(S*0.84,S*0.16,S*0.055,0,7); ctx.fill();
+}
+const brandIcon=document.getElementById('brandIcon');
+if(brandIcon) drawIcon(brandIcon,26);
+
+function iconDataURL(S){
+  const c=document.createElement('canvas'); c.width=c.height=S; drawIcon(c,S);
+  return c.toDataURL('image/png');
+}
+/* manifest via blob */
+try{
+  const manifest={
+    name:'ANANTA — Subquadratic Lab', short_name:'ANANTA',
+    description:'Interactive lab on subquadratic transformer architectures.',
+    start_url:'.', display:'standalone', background_color:'#0a0908', theme_color:'#0a0908',
+    icons:[
+      {src:iconDataURL(192), sizes:'192x192', type:'image/png'},
+      {src:iconDataURL(512), sizes:'512x512', type:'image/png'}
+    ]
+  };
+  const mBlob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+  const link=document.createElement('link'); link.rel='manifest'; link.href=URL.createObjectURL(mBlob);
+  document.head.appendChild(link);
+  const ic=document.createElement('link'); ic.rel='apple-touch-icon'; ic.href=iconDataURL(180); document.head.appendChild(ic);
+}catch(e){}
+
+/* service worker via blob (offline shell) */
+try{
+  if('serviceWorker' in navigator){
+    const sw=`
+      const CACHE='ananta-v1';
+      self.addEventListener('install', e=>{ self.skipWaiting(); });
+      self.addEventListener('activate', e=>{ e.waitUntil(self.clients.claim()); });
+      self.addEventListener('fetch', e=>{
+        const u=new URL(e.request.url);
+        if(u.origin===location.origin){
+          e.respondWith(
+            caches.open(CACHE).then(c=>
+              c.match(e.request).then(hit=> hit || fetch(e.request).then(r=>{ c.put(e.request, r.clone()); return r; }).catch(()=>hit))
+            )
+          );
+        }
+      });`;
+    const swURL=URL.createObjectURL(new Blob([sw],{type:'text/javascript'}));
+    navigator.serviceWorker.register(swURL).catch(()=>{});
+  }
+}catch(e){}
+
+/* install banner */
+let deferredPrompt=null;
+const installBanner=document.getElementById('installBanner');
+window.addEventListener('beforeinstallprompt', e=>{
+  e.preventDefault(); deferredPrompt=e;
+  if(store.get('ananta.installDismissed','0')!=='1') installBanner.classList.add('on');
+});
+document.getElementById('installBtn').addEventListener('click', async()=>{
+  if(!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice;
+  deferredPrompt=null; installBanner.classList.remove('on');
+});
+document.getElementById('dismissInstall').addEventListener('click',()=>{
+  installBanner.classList.remove('on'); store.set('ananta.installDismissed','1');
+});
+
+/* ============================================================
+   INIT + resize
+   ============================================================ */
+function renderAll(){ renderHero(); renderCurve(); renderMatrix(); renderFamDetail(); }
+function initDefaults(){
+  document.getElementById('useHeadline').textContent=useData.chat.h;
+  document.getElementById('useBody').textContent=useData.chat.b;
+}
+let rt;
+window.addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(renderAll,120); });
+
+renderAIGate();
+initDefaults();
+updateProgress();
+/* draw after fonts settle so metrics are right */
+if(document.fonts && document.fonts.ready){ document.fonts.ready.then(renderAll); }
+requestAnimationFrame(renderAll);
+setTimeout(renderAll, 400);
+</script>
+</body>
+</html>
