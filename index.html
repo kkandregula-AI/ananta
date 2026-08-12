@@ -201,6 +201,28 @@
   .apply .u h5{font-family:"DM Mono"; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--gold-dim); margin:0 0 4px}
   .apply .u p{font-size:13.5px; color:var(--ink-mute); margin:0}
 
+  /* subquadratic definition card */
+  .subq-def{border:1px solid var(--line); border-left:3px solid var(--gold); border-radius:var(--radius-sm); background:linear-gradient(180deg,var(--panel),var(--bg-elev)); padding:18px 20px; margin:22px 0 4px}
+  .subq-def .term{font-family:"Cinzel"; font-size:19px; color:var(--gold-bright); margin-bottom:3px}
+  .subq-def .phon{font-family:"DM Mono"; font-size:12px; color:var(--ink-faint); letter-spacing:.02em; margin-bottom:10px}
+  .subq-def p{font-size:14.5px; color:var(--ink-mute); margin:0; max-width:72ch}
+  .subq-def p strong{color:var(--ink)} .subq-def .mono{color:var(--gold)}
+
+  /* series roadmap */
+  .eps{display:flex; flex-direction:column; gap:12px; margin-top:8px}
+  .ep{display:flex; gap:16px; align-items:flex-start; border:1px solid var(--line); border-radius:var(--radius-sm); padding:16px; background:var(--panel)}
+  .ep.now{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold-ghost)}
+  .ep-n{font-family:"Cinzel"; font-weight:700; font-size:19px; color:var(--gold-dim); flex:none; width:34px; line-height:1.15}
+  .ep.now .ep-n{color:var(--gold-bright)}
+  .ep-body{flex:1; min-width:0}
+  .ep-body h4{font-family:"Cinzel"; font-size:16px; margin:0 0 4px; color:var(--gold-bright); display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+  .ep-body .en{font-family:"DM Mono"; font-size:12px; color:var(--ink-mute); font-weight:400}
+  .ep-body p{font-size:13.5px; color:var(--ink-mute); margin:0}
+  .ep-tag{font-family:"DM Mono"; font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; padding:2px 9px; border-radius:20px; border:1px solid transparent}
+  .ep-tag.live{color:var(--real); border-color:rgba(143,178,122,.4); background:rgba(143,178,122,.08)}
+  .ep-tag.next{color:var(--gold-bright); border-color:var(--gold-dim); background:var(--gold-ghost)}
+  .ep-tag.plan{color:var(--ink-faint); border-color:var(--line)}
+
   /* tradeoff picker */
   .usecases{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px}
   .chip{font:inherit; font-family:"DM Mono"; font-size:12px; letter-spacing:.03em; color:var(--ink-mute); background:var(--panel); border:1px solid var(--line); padding:8px 13px; border-radius:20px; cursor:pointer}
@@ -299,6 +321,7 @@
       <button class="navbtn wide" data-goto="escapes">The Escapes</button>
       <button class="navbtn wide" data-goto="ledger">Tradeoffs</button>
       <button class="navbtn wide" data-goto="architect">Ask</button>
+      <button class="navbtn wide" data-goto="series">Series</button>
       <button class="navbtn icon" id="openSettings" title="Settings" aria-label="Settings">⚙</button>
     </nav>
   </div>
@@ -343,6 +366,12 @@
       </div>
     </div>
     <p class="tagline">An interactive lab · shell runs offline · AI layer is bring-your-own-key</p>
+
+    <div class="subq-def">
+      <div class="term">sub·quadratic</div>
+      <div class="phon">/ˌsʌb·kwɒˈdrat·ɪk/ · adjective · of an algorithm</div>
+      <p><strong>Quadratic</strong> means growing with the square of the input — the <span class="mono">n²</span> cost of full attention, where every token compares against every other. <strong>Sub-</strong> means below. So <strong>subquadratic</strong> is the umbrella for any architecture whose cost grows <em>slower</em> than n² — <span class="mono">O(n·√n)</span>, <span class="mono">O(n log n)</span>, <span class="mono">O(n)</span>. It isn't one method but a whole family of escapes from the quadratic wall, and that family is what this series is about.</p>
+    </div>
   </section>
 
   <!-- CH1: THE WALL -->
@@ -517,6 +546,51 @@
       </div>
     </div>
     <p class="lab-note">Your key is stored only in this browser (localStorage) and sent directly to Anthropic — nothing routes through a server of mine. Set it under <span class="kbd">⚙</span>.</p>
+  </section>
+
+  <!-- SERIES ROADMAP -->
+  <section class="chapter" id="series" data-chapter>
+    <div class="ch-eyebrow"><span class="ch-num">→</span><span class="disp" style="font-size:12px;letter-spacing:.2em;color:var(--gold-dim)">THE ROADMAP</span><span class="rule"></span></div>
+    <h2>The Subquadratic Series</h2>
+    <p class="lede">ANANTA is Episode 01 — the map of the whole territory. From here, each escape it introduced earns its own deep dive, and the arc closes on how they're combined in practice.</p>
+    <div class="eps">
+      <div class="ep now">
+        <div class="ep-n">01</div>
+        <div class="ep-body">
+          <h4>ANANTA <span class="ep-tag live">This episode</span></h4>
+          <p>The Quadratic Wall &amp; the Subquadratic Escape — why attention is O(n²), and the four families that break it. The overview you're reading now.</p>
+        </div>
+      </div>
+      <div class="ep">
+        <div class="ep-n">02</div>
+        <div class="ep-body">
+          <h4>STHITI <span class="en">· "state"</span> <span class="ep-tag next">Up next</span></h4>
+          <p>State Space Models, up close. The recurrent scan, selective SSMs (the Mamba idea), the parallel-scan training trick, and why a fixed-size state both frees you and limits you.</p>
+        </div>
+      </div>
+      <div class="ep">
+        <div class="ep-n">03</div>
+        <div class="ep-body">
+          <h4>BĪJA <span class="en">· "algebra"</span> <span class="ep-tag plan">Planned</span></h4>
+          <p>Linear Attention, the pure algebra. Kernels, the recurrence form, approximating softmax — and an honest look at where the sharp, selective focus goes when you drop it.</p>
+        </div>
+      </div>
+      <div class="ep">
+        <div class="ep-n">04</div>
+        <div class="ep-body">
+          <h4>CAYANA <span class="en">· "selection"</span> <span class="ep-tag plan">Planned</span></h4>
+          <p>Selective &amp; Sparse Attention. Windows, strided and dilated patterns, learned sparsity — and how SubQ's SSA actually decides which handful of tokens each token gets to see.</p>
+        </div>
+      </div>
+      <div class="ep">
+        <div class="ep-n">05</div>
+        <div class="ep-body">
+          <h4>SAṄGAMA <span class="en">· "confluence"</span> <span class="ep-tag plan">Planned</span></h4>
+          <p>Hybrids — the form that actually ships. How production stacks blend a few full-attention layers for sharp recall with many subquadratic layers for cheap reach.</p>
+        </div>
+      </div>
+    </div>
+    <p class="lab-note">A roadmap is a plan, not a promise — the order may shift as the field moves, and 2026 is moving fast.</p>
   </section>
 
 </div>
