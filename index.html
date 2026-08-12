@@ -129,22 +129,77 @@
   .seg button.on{background:var(--gold-ghost); color:var(--gold-bright); box-shadow:inset 0 0 0 1px rgba(212,175,106,.3)}
   .seg button:hover{color:var(--ink)}
 
-  /* family cards */
-  .families{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px; margin-top:8px}
-  .fam{border:1px solid var(--line); border-radius:var(--radius-sm); padding:16px; background:var(--panel); cursor:pointer; transition:border-color .2s, transform .2s}
-  .fam:hover{border-color:var(--gold-dim); transform:translateY(-2px)}
-  .fam.on{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold-ghost), var(--shadow)}
-  .fam h4{font-family:"Cinzel"; font-size:15px; margin:0 0 3px; color:var(--gold-bright)}
-  .fam .big-o{font-family:"DM Mono"; font-size:12px; color:var(--curve-lin); margin-bottom:8px}
-  .fam p{font-size:13px; color:var(--ink-mute); margin:0}
-  .fam-detail{margin-top:16px; border:1px solid var(--line); border-radius:var(--radius-sm); padding:18px; background:var(--bg-elev); min-height:120px}
-  .fam-detail h4{font-family:"Cinzel"; color:var(--gold-bright); margin:0 0 4px; font-size:17px}
-  .gl{display:flex; gap:20px; flex-wrap:wrap; margin-top:12px}
-  .gl div{flex:1; min-width:180px}
+  /* family accordion */
+  .fam-acc{display:flex; flex-direction:column; gap:12px; margin-top:8px}
+  .fam-item{border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--panel); overflow:hidden; transition:border-color .2s}
+  .fam-item.open{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold-ghost)}
+  .fam-head{width:100%; display:flex; align-items:flex-start; gap:12px; padding:15px 16px; background:transparent; border:0; cursor:pointer; text-align:left; font:inherit}
+  .fam-head:hover{background:var(--gold-ghost)}
+  .fam-head .ht{display:flex; flex-direction:column; gap:2px; flex:1; min-width:0}
+  .fam-head h4{font-family:"Cinzel"; font-size:15.5px; margin:0; color:var(--gold-bright)}
+  .fam-head .big-o{font-family:"DM Mono"; font-size:11.5px; color:var(--curve-lin)}
+  .fam-head .sum{font-size:12.5px; color:var(--ink-mute); margin-top:3px}
+  .fam-head .caret{flex:none; color:var(--gold-dim); font-size:13px; margin-top:3px; transition:transform .25s}
+  .fam-item.open .fam-head .caret{transform:rotate(180deg)}
+  .fam-body{display:none; padding:2px 16px 18px; border-top:1px solid var(--line-soft)}
+  .fam-item.open .fam-body{display:block}
+  .fam-body>p.exp{font-size:14px; color:var(--ink-mute); margin:14px 0 0}
+  .gl{display:flex; gap:20px; flex-wrap:wrap; margin-top:14px}
+  .gl div{flex:1; min-width:160px}
   .gl .h{font-family:"DM Mono"; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; margin-bottom:5px}
   .gl .gain .h{color:var(--real)} .gl .lose .h{color:var(--warn)}
   .gl ul{margin:0; padding-left:18px; font-size:13.5px; color:var(--ink-mute)}
   .gl li{margin-bottom:4px}
+
+  /* schematic HTML figures (crisp at any width) */
+  .fig{margin-top:16px; border:1px solid var(--line-soft); border-radius:var(--radius-sm); background:var(--bg-elev); padding:15px 16px}
+  .fig-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px}
+  .fig-head .ft{font-family:"DM Mono"; font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-faint)}
+  .fig-row{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:10px 0}
+  .fig-row .lbl{font-family:"DM Mono"; font-size:11.5px; color:var(--ink-mute); min-width:118px}
+  .fig-flow{display:flex; align-items:center; gap:9px; flex-wrap:wrap}
+  .box{font-family:"DM Mono"; font-size:11px; display:grid; place-items:center; border:1.5px solid var(--ink-faint); color:var(--ink-mute); border-radius:6px; text-align:center; line-height:1.2; padding:3px}
+  .box small{display:block; font-size:9px; color:var(--ink-faint); margin-top:2px}
+  .box.big{width:76px; height:76px} .box.med{width:52px; height:60px}
+  .box.sm{width:48px; height:48px} .box.tall{width:46px; height:82px}
+  .box.red{border-color:var(--curve-tf); color:var(--curve-tf); background:rgba(207,106,74,.09)}
+  .box.red small{color:var(--curve-tf)}
+  .box.green{border-color:var(--curve-lin); color:var(--curve-lin); background:rgba(127,178,122,.10)}
+  .box.green small{color:var(--curve-lin)}
+  .box.gold{border-color:var(--gold-dim); color:var(--gold-bright); background:var(--gold-ghost)}
+  .arrow{font-family:"DM Mono"; color:var(--gold-dim); font-size:15px}
+  .fig-note{font-family:"DM Mono"; font-size:11px}
+  .fig-note.red{color:var(--curve-tf)} .fig-note.green{color:var(--curve-lin)}
+  .fig-cap{font-size:13px; color:var(--ink-mute); font-style:italic; margin:12px 0 0; line-height:1.5}
+  .ssm-state{border:1.5px solid var(--curve-lin); background:rgba(127,178,122,.08); border-radius:7px; color:var(--curve-lin); font-family:"DM Mono"; font-size:11px; text-align:center; padding:10px; margin-bottom:14px}
+  .ssm-tokens{display:flex; align-items:center; gap:5px; flex-wrap:wrap}
+  .ssm-tokens .tk{width:32px;height:32px;border:1px solid var(--ink-faint);border-radius:5px;display:grid;place-items:center;font-family:"DM Mono";font-size:10px;color:var(--ink-mute);background:var(--panel-2)}
+  .ssm-tokens .ar{color:var(--curve-lin); font-family:"DM Mono"; font-size:13px}
+  .band{display:grid; gap:2px; width:min(240px,68%); margin:2px 0}
+  .band i{aspect-ratio:1; border-radius:2px; background:rgba(120,110,90,.06)}
+  .band i.on{background:var(--gold)}
+
+  /* attention matrix axis labels */
+  .mx-wrap{position:relative; padding:22px 0 0 24px}
+  .mx-xlab{position:absolute; top:2px; left:24px; right:0; text-align:center; font-family:"DM Mono"; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--gold-dim)}
+  .mx-ylab{position:absolute; left:0; top:calc(50% + 11px); transform:translateY(-50%); writing-mode:vertical-rl; font-family:"DM Mono"; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--gold-dim)}
+
+  /* "reading the three lines" definitions */
+  .defs{display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:12px; margin:2px 0 6px}
+  .def{border:1px solid var(--line); border-left-width:3px; border-radius:var(--radius-sm); padding:13px 15px; background:var(--panel)}
+  .def h4{font-family:"Cinzel"; font-size:14.5px; margin:0 0 2px}
+  .def .oo{font-family:"DM Mono"; font-size:10.5px; margin-bottom:7px}
+  .def p{font-size:13px; color:var(--ink-mute); margin:0}
+  .def.tf{border-left-color:var(--curve-tf)} .def.tf h4,.def.tf .oo{color:var(--curve-tf)}
+  .def.sp{border-left-color:var(--curve-log)} .def.sp h4,.def.sp .oo{color:var(--curve-log)}
+  .def.ln{border-left-color:var(--curve-lin)} .def.ln h4,.def.ln .oo{color:var(--curve-lin)}
+
+  /* applicability panel */
+  .apply{border:1px solid var(--line); border-radius:var(--radius); background:linear-gradient(180deg,var(--panel),var(--bg-elev)); padding:20px; margin-top:22px}
+  .apply h3{font-family:"Cinzel"; font-size:17px; color:var(--gold-bright); margin:0 0 12px}
+  .apply .row2{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:16px}
+  .apply .u h5{font-family:"DM Mono"; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--gold-dim); margin:0 0 4px}
+  .apply .u p{font-size:13.5px; color:var(--ink-mute); margin:0}
 
   /* tradeoff picker */
   .usecases{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px}
@@ -309,10 +364,14 @@
         </div>
         <div class="matrix-holder">
           <div class="mx">
-            <canvas id="matrixCanvas" width="520" height="520" role="img" aria-label="Attention matrix pattern"></canvas>
+            <div class="mx-wrap">
+              <span class="mx-xlab">Keys →</span>
+              <span class="mx-ylab">Queries ↓</span>
+              <canvas id="matrixCanvas" width="520" height="520" role="img" aria-label="Attention matrix: rows are query tokens, columns are key tokens"></canvas>
+            </div>
           </div>
           <div class="mx-side">
-            <p style="font-size:13.5px;color:var(--ink-mute);margin-top:0">Every lit cell is one query–key comparison the model must compute and store. Change the pattern to see how the subquadratic families cut the matrix down.</p>
+            <p style="font-size:13.5px;color:var(--ink-mute);margin-top:0"><strong style="color:var(--ink)">Each row is a query</strong> (the token doing the looking); <strong style="color:var(--ink)">each column is a key</strong> (the token looked at). A lit cell means row&nbsp;<em>i</em> attends to column&nbsp;<em>j</em> — one comparison the model must compute and store. It's a lower triangle because a token can only see itself and earlier tokens. Change the pattern to see how the subquadratic families cut the matrix down.</p>
             <div class="seg" role="tablist" aria-label="Attention pattern" style="margin:6px 0 16px">
               <button data-pattern="full" class="on">Full</button>
               <button data-pattern="local">Local window</button>
@@ -339,8 +398,29 @@
     <h2>Reading the Cost Curve</h2>
     <p class="lede">The same curves as the hero, but now yours to interrogate. On a log–log plot the wall is unmistakable: quadratic pulls away from linear, and never comes back.</p>
     <div class="prose">
-      <p>In <strong>May 2026 the first commercial subquadratic model shipped with a 12-million-token context window</strong> — a length that would be economically absurd for full attention. The reason a jump like that becomes possible is entirely in the slope of these lines. Beyond a certain length, the architecture matters more than the parameter count.</p>
+      <p>In <strong>May 2026, a Miami startup called Subquadratic shipped SubQ</strong> — the first commercial LLM to claim a <strong>12-million-token context window</strong>, a length that would be economically absurd for full attention. Its architecture (SSA, <em>Subquadratic Selective Attention</em>) is a learned <em>sparse</em> scheme — each token attends only to the handful it deems relevant — so it belongs to the Sparse / Local escape below rather than to linear attention or SSMs. The reason a jump like that becomes possible is entirely in the slope of these lines: beyond a certain length, the architecture matters more than the parameter count.</p>
+      <p class="lab-note" style="margin-top:0">A note on honesty: SubQ's headline efficiency figures (52× faster, ~1,000× cheaper) are vendor-reported, single-shot, and not yet independently reproduced. The 12M window and the subquadratic <em>shape</em> are the durable, verifiable part — the exact multipliers still await outside confirmation.</p>
     </div>
+
+    <h3 style="font-family:'Cinzel';font-size:16px;color:var(--ink);margin:8px 0 12px;letter-spacing:.02em">Reading the three lines</h3>
+    <div class="defs">
+      <div class="def tf">
+        <h4>Transformer</h4>
+        <div class="oo">Full attention · O(n²)</div>
+        <p>The classic design. Every token attends to <em>every</em> other token — exact, all-pairs recall, but the work grows with the square of the length.</p>
+      </div>
+      <div class="def sp">
+        <h4>Sparse</h4>
+        <div class="oo">Selective / windowed · O(n·√n)→O(n)</div>
+        <p>Still real attention, but rationed — each token attends only to a chosen window or pattern. Cheaper, at the risk of missing links off the pattern. (SubQ's SSA lives here.)</p>
+      </div>
+      <div class="def ln">
+        <h4>Linear / SSM</h4>
+        <div class="oo">Running summary · O(n)</div>
+        <p>Drops the n×n step entirely — folding the past into a fixed-size running summary (linear attention) or a recurrent state (state space models). Scales flat with length.</p>
+      </div>
+    </div>
+
     <div class="lab card">
       <div class="card-pad">
         <div class="lab-head">
@@ -367,43 +447,9 @@
   <section class="chapter" id="escapes" data-chapter>
     <div class="ch-eyebrow"><span class="ch-num">03</span><span class="disp" style="font-size:12px;letter-spacing:.2em;color:var(--gold-dim)">THE ANSWERS</span><span class="rule"></span></div>
     <h2>The Four Escapes</h2>
-    <p class="lede">There is no single "subquadratic" method — there's a family of escapes, each trading a different slice of full attention for a gentler curve. Tap one to open it.</p>
+    <p class="lede">There is no single "subquadratic" method — there's a family of escapes, each trading a different slice of full attention for a gentler curve. Tap a card to open its full explanation and diagram.</p>
 
-    <div class="families" id="famGrid">
-      <div class="fam on" data-fam="linear">
-        <h4>Linear Attention</h4>
-        <div class="big-o">O(n · d²)</div>
-        <p>Reorder the matmul so you never build the n×n matrix at all.</p>
-      </div>
-      <div class="fam" data-fam="ssm">
-        <h4>State Space Models</h4>
-        <div class="big-o">O(n) · scan</div>
-        <p>Replace attention with a recurrent state that streams through the sequence.</p>
-      </div>
-      <div class="fam" data-fam="sparse">
-        <h4>Sparse / Local</h4>
-        <div class="big-o">O(n · w)</div>
-        <p>Only attend to a window or a pattern, not the whole past.</p>
-      </div>
-      <div class="fam" data-fam="lowrank">
-        <h4>Low-Rank</h4>
-        <div class="big-o">O(n · k)</div>
-        <p>Project keys and values down to a small rank before attending.</p>
-      </div>
-    </div>
-
-    <div class="fam-detail card-pad" id="famDetail"></div>
-
-    <div class="lab card" style="margin-top:22px">
-      <div class="card-pad">
-        <div class="lab-head">
-          <h3 id="famVizTitle">The reordering trick</h3>
-          <span class="tag sim"><span class="dot"></span>Simulated</span>
-        </div>
-        <canvas id="famCanvas" width="1000" height="300" role="img" aria-label="Visualisation of the selected subquadratic family"></canvas>
-        <p class="lab-note" id="famVizNote">Full attention computes (Q·Kᵀ)·V — the Q·Kᵀ step alone is an n×n matrix. Linear attention computes Q·(Kᵀ·V) instead: the Kᵀ·V step is only d×d, and never grows with sequence length.</p>
-      </div>
-    </div>
+    <div class="fam-acc" id="famAcc"></div>
   </section>
 
   <!-- CH4: LEDGER -->
@@ -428,6 +474,20 @@
         </div>
         <p class="lab-note">A pragmatic rule of 2026: most shipping systems are <em>hybrids</em> — a few full-attention layers for precise recall, stacked with many linear or SSM layers for cheap reach.</p>
       </div>
+    </div>
+
+    <div class="apply">
+      <h3>Where this actually lands in 2026</h3>
+      <p class="prose" style="color:var(--ink-mute);font-size:14px;margin:0 0 16px">The honest picture: the transformer still runs the world. Most frontier models you use daily are full-attention, capped around 128K–1M tokens. Subquadratic is the fast-moving frontier, not yet the default — but it's where the next unlock in long context is coming from. Concretely, it matters most in:</p>
+      <div class="row2">
+        <div class="u"><h5>Long-context over RAG</h5><p>A large enough native window (SubQ's pitch) can let a model read a whole corpus directly instead of retrieving snippets — simplifying or replacing RAG plumbing where it fits.</p></div>
+        <div class="u"><h5>Agents with long memory</h5><p>Agents that accumulate huge histories are exactly where a growing KV cache hurts. Recurrent SSM-style memory keeps cost flat as the transcript grows.</p></div>
+        <div class="u"><h5>On-device &amp; edge</h5><p>Constant memory per step is what makes meaningful context feasible on phones and laptops, where a quadratic cache simply won't fit.</p></div>
+        <div class="u"><h5>Genomics &amp; long signals</h5><p>DNA, audio, and sensor streams are enormously long with local structure — the setting where SSMs have posted their clearest wins.</p></div>
+        <div class="u"><h5>Cheaper serving at length</h5><p>Below ~8K tokens the savings are marginal; past a few hundred K they're the whole ballgame, which is where cost-sensitive long-context products lean subquadratic.</p></div>
+        <div class="u"><h5>The realistic form: hybrids</h5><p>In practice you rarely go pure. Production designs blend a few full-attention layers for sharp recall with many cheap subquadratic layers for reach.</p></div>
+      </div>
+      <p class="lab-note" style="margin-top:16px">Bottom line for a builder in 2026: reach for subquadratic when context length is your cost or latency ceiling; stay with full attention when exact recall over short context is the job. Watch the space — the ground is still moving.</p>
     </div>
   </section>
 
@@ -785,91 +845,88 @@ const famData={
     vizNote:'Keys and values (n rows) are squeezed through a fixed rank-k bottleneck before attention, so the interaction is n×k instead of n×n.'
   }
 };
-let curFam='linear';
-function renderFamDetail(){
-  const d=famData[curFam];
-  document.getElementById('famDetail').innerHTML =
-    '<h4>'+d.title+'</h4>'+
-    '<p style="font-size:14px;color:var(--ink-mute);margin:0">'+d.body+'</p>'+
-    '<div class="gl"><div class="gain"><div class="h">What you gain</div><ul>'+
-    d.gain.map(x=>'<li>'+x+'</li>').join('')+'</ul></div>'+
-    '<div class="lose"><div class="h">What you give up</div><ul>'+
-    d.lose.map(x=>'<li>'+x+'</li>').join('')+'</ul></div></div>';
-  document.getElementById('famVizTitle').textContent=d.vizTitle;
-  document.getElementById('famVizNote').textContent=d.vizNote;
-  renderFamViz();
+/* ---------- The Four Escapes: accordion with inline HTML figures ---------- */
+const famOrder=['linear','ssm','sparse','lowrank'];
+const famMeta={
+  linear:{name:'Linear Attention', o:'O(n · d²)', sum:'Reorder the matmul so you never build the n×n matrix at all.'},
+  ssm:{name:'State Space Models', o:'O(n) · scan', sum:'Replace attention with a recurrent state that streams through the sequence.'},
+  sparse:{name:'Sparse / Local', o:'O(n · w)', sum:'Only attend to a window or a pattern, not the whole past.'},
+  lowrank:{name:'Low-Rank', o:'O(n · k)', sum:'Project keys and values down to a small rank before attending.'}
+};
+function bandGrid(n,w){
+  let cells='';
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++){
+    const on = (j<=i) && (i-j)<w;
+    cells+='<i class="'+(on?'on':'')+'"></i>';
+  }
+  return '<div class="band" style="grid-template-columns:repeat('+n+',1fr)">'+cells+'</div>';
 }
-document.querySelectorAll('#famGrid .fam').forEach(f=>{
-  f.addEventListener('click',()=>{
-    document.querySelectorAll('#famGrid .fam').forEach(x=>x.classList.remove('on'));
-    f.classList.add('on'); curFam=f.dataset.fam; renderFamDetail();
+const simTag='<span class="tag sim"><span class="dot"></span>Schematic</span>';
+function figFor(k){
+  if(k==='linear'){
+    return '<div class="fig"><div class="fig-head"><span class="ft">The reordering trick</span>'+simTag+'</div>'+
+      '<div class="fig-row"><span class="lbl">Full · (Q·Kᵀ)·V</span><div class="fig-flow">'+
+        '<div class="box red big">Q·Kᵀ<small>n × n</small></div><span class="arrow">×</span>'+
+        '<div class="box med">V</div><span class="fig-note red">grows with n²</span></div></div>'+
+      '<div class="fig-row"><span class="lbl">Linear · Q·(Kᵀ·V)</span><div class="fig-flow">'+
+        '<div class="box med">Q</div><span class="arrow">×</span>'+
+        '<div class="box green sm">Kᵀ·V<small>d × d</small></div><span class="fig-note green">fixed — never grows</span></div></div>'+
+      '<p class="fig-cap">Same result, different order. Full attention builds the red n×n matrix first; linear attention multiplies the small green d×d block first, so nothing ever scales with n.</p></div>';
+  }
+  if(k==='ssm'){
+    let toks='';
+    for(let i=1;i<=7;i++){ toks+='<div class="tk">t'+i+'</div>'; if(i<7) toks+='<span class="ar">→</span>'; }
+    return '<div class="fig"><div class="fig-head"><span class="ft">The recurrent scan</span>'+simTag+'</div>'+
+      '<div class="ssm-state">one fixed-size state — carried across the whole sequence</div>'+
+      '<div class="ssm-tokens">'+toks+'</div>'+
+      '<p class="fig-cap">Each token folds into one fixed-size state and passes it forward. Memory per step stays flat — O(n) — with no n×n matrix and no growing KV cache.</p></div>';
+  }
+  if(k==='sparse'){
+    return '<div class="fig"><div class="fig-head"><span class="ft">The attention band</span>'+simTag+'</div>'+
+      bandGrid(12,4)+
+      '<p class="fig-cap">Only a band of width w around the diagonal is computed (rows = queries, columns = keys). Widen the window for more reach at proportional cost — but never the full square. Cost is O(n·w).</p></div>';
+  }
+  if(k==='lowrank'){
+    return '<div class="fig"><div class="fig-head"><span class="ft">The projection</span>'+simTag+'</div>'+
+      '<div class="fig-row"><div class="fig-flow">'+
+        '<div class="box tall">K, V<small>n rows</small></div><span class="arrow">→</span>'+
+        '<span class="lbl" style="min-width:auto">project to rank k</span><span class="arrow">→</span>'+
+        '<div class="box gold sm">k</div><span class="arrow">→</span>'+
+        '<div class="box green med">attend<small>n × k</small></div></div></div>'+
+      '<p class="fig-cap">Keys and values (n rows) are squeezed through a fixed rank-k bottleneck before attention, so the interaction is n×k instead of n×n. Cost is O(n·k).</p></div>';
+  }
+  return '';
+}
+function buildAccordion(){
+  const host=document.getElementById('famAcc');
+  if(!host) return;
+  host.innerHTML=famOrder.map(k=>{
+    const m=famMeta[k], d=famData[k], open=(k==='linear');
+    return '<div class="fam-item'+(open?' open':'')+'" data-fam="'+k+'">'+
+      '<button class="fam-head" aria-expanded="'+open+'">'+
+        '<span class="ht"><h4>'+m.name+'</h4><span class="big-o">'+m.o+'</span><span class="sum">'+m.sum+'</span></span>'+
+        '<span class="caret">▾</span>'+
+      '</button>'+
+      '<div class="fam-body">'+
+        '<p class="exp">'+d.body+'</p>'+
+        '<div class="gl"><div class="gain"><div class="h">What you gain</div><ul>'+
+          d.gain.map(x=>'<li>'+x+'</li>').join('')+'</ul></div>'+
+          '<div class="lose"><div class="h">What you give up</div><ul>'+
+          d.lose.map(x=>'<li>'+x+'</li>').join('')+'</ul></div></div>'+
+        figFor(k)+
+      '</div></div>';
+  }).join('');
+  host.querySelectorAll('.fam-head').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const item=btn.closest('.fam-item');
+      const wasOpen=item.classList.contains('open');
+      host.querySelectorAll('.fam-item').forEach(it=>{
+        it.classList.remove('open');
+        it.querySelector('.fam-head').setAttribute('aria-expanded','false');
+      });
+      if(!wasOpen){ item.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
+    });
   });
-});
-
-/* family visualisations */
-const famCanvas=document.getElementById('famCanvas');
-function renderFamViz(){
-  const { ctx, w, h } = fitCanvas(famCanvas);
-  ctx.clearRect(0,0,w,h);
-  ctx.font='11px "DM Mono", monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  const midY=h/2;
-  function block(x,y,bw,bh,color,label,sub){
-    ctx.strokeStyle=color; ctx.lineWidth=1.5;
-    ctx.globalAlpha=0.12; ctx.fillStyle=color; ctx.fillRect(x,y,bw,bh); ctx.globalAlpha=1;
-    ctx.strokeRect(x,y,bw,bh);
-    ctx.fillStyle=color; ctx.fillText(label, x+bw/2, y+bh/2-6);
-    if(sub){ ctx.fillStyle=C.faint; ctx.font='9px "DM Mono"'; ctx.fillText(sub, x+bw/2, y+bh/2+9); ctx.font='11px "DM Mono"'; }
-  }
-  if(curFam==='linear'){
-    // left: (Q Kt) V  with big n x n ; right: Q (Kt V) with small d x d
-    ctx.fillStyle=C.mute; ctx.fillText('Full:  (Q·Kᵀ)·V', w*0.25, 22);
-    block(w*0.10, midY-70, 90, 90, C.tf, 'Q·Kᵀ', 'n × n');
-    block(w*0.10+104, midY-40, 46, 60, C.mute, '·V', '');
-    ctx.fillStyle=C.tf; ctx.fillText('grows with n²', w*0.25, h-18);
-
-    ctx.strokeStyle=C.grid; ctx.beginPath(); ctx.moveTo(w*0.5,20); ctx.lineTo(w*0.5,h-20); ctx.stroke();
-
-    ctx.fillStyle=C.mute; ctx.fillText('Linear:  Q·(Kᵀ·V)', w*0.75, 22);
-    block(w*0.66, midY-26, 46, 60, C.mute, 'Q', '');
-    block(w*0.66+58, midY-26, 52, 52, C.lin, 'Kᵀ·V', 'd × d');
-    ctx.fillStyle=C.lin; ctx.fillText('fixed size — never grows', w*0.75, h-18);
-  } else if(curFam==='ssm'){
-    // token stream through one state
-    const n=9, gap=(w-80)/n, y=midY;
-    for(let i=0;i<n;i++){
-      const x=40+gap*i;
-      ctx.fillStyle=C.faint; ctx.fillRect(x-9,y+34,18,18);
-      ctx.fillStyle=C.mute; ctx.font='9px "DM Mono"'; ctx.fillText('t'+(i+1),x,y+43); ctx.font='11px "DM Mono"';
-      // arrow up to state
-      ctx.strokeStyle=C.grid; ctx.beginPath(); ctx.moveTo(x,y+32); ctx.lineTo(x,y+14); ctx.stroke();
-      if(i<n-1){ ctx.strokeStyle='rgba(127,178,122,.6)'; ctx.beginPath(); ctx.moveTo(x+9,y); ctx.lineTo(x+gap-9,y); ctx.stroke(); }
-    }
-    // the single state box spanning
-    ctx.globalAlpha=0.10; ctx.fillStyle=C.lin; ctx.fillRect(28,y-18,w-56,32); ctx.globalAlpha=1;
-    ctx.strokeStyle=C.lin; ctx.lineWidth=1.5; ctx.strokeRect(28,y-18,w-56,32);
-    ctx.fillStyle=C.lin; ctx.fillText('one fixed-size state · updated per token · O(n)', w/2, y+2);
-  } else if(curFam==='sparse'){
-    // band matrix
-    const n=22, pad=20, size=Math.min(w,h)-pad*2, cell=size/n, ox=(w-size)/2, oy=(h-size)/2, wdw=4;
-    for(let i=0;i<n;i++)for(let j=0;j<=i;j++){
-      const on = i-j<wdw;
-      ctx.fillStyle = on?'rgba(212,175,106,.6)':'rgba(120,110,90,.06)';
-      ctx.fillRect(ox+j*cell+0.5, oy+i*cell+0.5, cell-1, cell-1);
-    }
-    ctx.strokeStyle=C.lin; ctx.textAlign='left';
-    ctx.fillStyle=C.lin; ctx.fillText('only a band of width w is computed → O(n·w)', ox, oy+size+14); ctx.textAlign='center';
-  } else if(curFam==='lowrank'){
-    block(w*0.14, midY-60, 40, 120, C.mute, 'K,V', 'n rows');
-    // arrow
-    ctx.strokeStyle=C.gold; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(w*0.14+52,midY); ctx.lineTo(w*0.40,midY); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(w*0.40,midY); ctx.lineTo(w*0.40-7,midY-5); ctx.lineTo(w*0.40-7,midY+5); ctx.closePath(); ctx.fillStyle=C.gold; ctx.fill();
-    ctx.fillStyle=C.faint; ctx.fillText('project ↓ to rank k', w*0.27, midY-70);
-    block(w*0.42, midY-26, 40, 52, C.lin, 'k', 'k rows');
-    ctx.strokeStyle=C.gold; ctx.beginPath(); ctx.moveTo(w*0.42+52,midY); ctx.lineTo(w*0.66,midY); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(w*0.66,midY); ctx.lineTo(w*0.66-7,midY-5); ctx.lineTo(w*0.66-7,midY+5); ctx.closePath(); ctx.fillStyle=C.gold; ctx.fill();
-    block(w*0.68, midY-40, 70, 80, C.lin, 'attend', 'n × k');
-    ctx.fillStyle=C.lin; ctx.fillText('n × k  instead of  n × n', w/2, h-16);
-  }
 }
 
 /* ============================================================
@@ -1132,7 +1189,7 @@ document.getElementById('dismissInstall').addEventListener('click',()=>{
 /* ============================================================
    INIT + resize
    ============================================================ */
-function renderAll(){ renderHero(); renderCurve(); renderMatrix(); renderFamDetail(); }
+function renderAll(){ renderHero(); renderCurve(); renderMatrix(); }
 function initDefaults(){
   document.getElementById('useHeadline').textContent=useData.chat.h;
   document.getElementById('useBody').textContent=useData.chat.b;
@@ -1141,6 +1198,7 @@ let rt;
 window.addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(renderAll,120); });
 
 renderAIGate();
+buildAccordion();
 initDefaults();
 updateProgress();
 /* draw after fonts settle so metrics are right */
